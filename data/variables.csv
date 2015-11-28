@@ -1,0 +1,22 @@
+Variable;Description in English
+modell;model
+inverkehrssetzung;first registration of the car Month-Year
+fahrzeugart;type of car
+aussenfarbe;outside color
+kilometer;kilometers
+getriebeart;transmission type (manual/automatic)
+antrieb;front wheel / rear wheel / 4 wheel
+treibstoff;fuel type
+tueren;number of doors
+sitze;number of seats
+innenfarbe;inside color
+hubrauminccm;engine capacity in ccm
+zylinder;cylinder
+leistunginps;power in horsepower
+leergewicht;curb weight
+verbrauch;fuel consumption in liters / 100km
+co2.emission;co2 emissions
+energieeffizienz;energency efficiency
+abmfk;certification of vehicle by authorities, i.e., you can only use a car if you have the MFK
+garantie;warranty
+preis;price
