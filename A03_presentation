@@ -1,0 +1,55 @@
+---
+title: "Introduction to R - Used Car Prices"
+author: "Lukas Vogt and Philipp Thienel"
+date: "November 29, 2015"
+output:
+  beamer_presentation:
+    colortheme: beaver
+    fonttheme: structurebold
+    theme: CambridgeUS
+---
+# Table of Contents
+\textcolor{black}{1.} **Dataset and Assignment**
+
+\textcolor{black}{2.} **Cleaning the Dataset**  
+
+\textcolor{black}{3.} **Descriptive Analysis of the Dataset**  
+
+\textcolor{black}{4.} **Multivariate Analysis of the Dataset**  
+
+\textcolor{black}{5.} **I-Wish-I-Had-Known-Before**  
+
+
+# Dataset and Assignment
+**Dataset:**
+
+Messy dataset that contains records of a website selling used cars from July 2011. Along with the price there are various characteristics (kilometers, inverkehrssetzung, hubraum, etc.) of different VW station wagons (Golf, Passat, Bora, Caddy, Multivan).
+
+
+# Dataset and Assignment
+**Assignment:**
+
+\textcolor{black}{1.} Import and clean messy dataset  
+
+\textcolor{black}{2.} Descriptive analysis of the dataset  
+\textcolor{white}{2.1}  What do you observe for prices?  
+\textcolor{white}{2.2}  How have they potentially been sampled? 
+
+\textcolor{black}{3.} Multivariate analysis of the dataset: Different Regression Models 
+
+\textcolor{black}{4.} Most reasonable / best regression model?
+
+
+# Cleaning the dataset
+**Problem 1: Extracting the plattfrom from the modell**
+
+
+# Cleaning the dataset
+**Problem:**
+
+
+# Descriptive Analysis
+
+
+# Multivariate Analysis
+
