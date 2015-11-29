@@ -43,9 +43,10 @@ Explain how data, files, funtions etc. are organized, Where what can be found.
 ## 2.2 Dependencies & required libraries
 Following R libraries will be required:
 
+* ggplot2
+* knitr
 * stringr
 * reshape2
-* knitr
 
 ```{r include=FALSE}
 library(knitr)
@@ -129,7 +130,7 @@ data <- within(data,{
 
 
 ## 3.3 Adding features to the data
-Three aditional features that can be extracted from the existing variables are most obvious:
+Three additional features that can be extracted from the existing variables are:
 
 1. plattform of the model (Golf, Bora, Passat etc.) - can be extracted from the 'modell' variable
 2. age of the car in months and years - we will just take the time difference between first registration and July 2011 (when the data was sampled) as an approximation 
@@ -155,7 +156,7 @@ data$plattform <- as.factor(GetPlattform(data$modell))
 ```
 
 **2. Calculating the age of the vehicle**
-We can get the motnh and year of the first registration from the variable 'inverkehrssetzung'. This variable is of type factor and has the structure: 'month-year', so for example '01-2012'.
+We can get the motnh and year of the first registration from the variable 'inverkehrssetzung'. This variable is of type factor and has the structure: 'month-year', so for example '01-2011'.
 
 To calculate the age we define a function that takes a factor variable as input. Splits the factor by '-' in two columns (month and year) and then calculates the difference between the month of the first registration and july 2011. 
 
