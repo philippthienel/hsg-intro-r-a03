@@ -8,6 +8,16 @@ output:
     fonttheme: structurebold
     theme: CambridgeUS
 ---
+```{r include=FALSE}
+library(knitr)
+library(stringr)
+library(reshape2)
+library(ggplot2)
+setwd('C:/Users/Lukas/Downloads/hsg-intro-r-a03-master/hsg-intro-r-a03-master')
+path.data <- './data/vw_station_wagons.csv'
+data <- read.csv(path.data, sep=',')
+```
+---
 # Table of Contents
 \textcolor{black}{1.} **Dataset and Assignment**
 
@@ -20,10 +30,12 @@ output:
 \textcolor{black}{5.} **I-Wish-I-Had-Known-Before**  
 
 
+
 # Dataset and Assignment
 **Dataset:**
 
-Messy dataset that contains records of a website selling used cars from July 2011. Along with the price there are various characteristics (kilometers, inverkehrssetzung, hubraum, etc.) of different VW station wagons (Golf, Passat, Bora, Caddy, Multivan).
+Messy dataset that contains 1'170 records of a website selling used cars from July 2011. Along with the price there are 21 characteristics (kilometers, inverkehrssetzung, hubraum, etc.) of different VW station wagons (Golf, Passat, Bora, Caddy, Multivan).
+
 
 
 # Dataset and Assignment
@@ -40,12 +52,79 @@ Messy dataset that contains records of a website selling used cars from July 201
 \textcolor{black}{4.} Most reasonable / best regression model?
 
 
-# Cleaning the dataset
-**Problem 1: Extracting the plattfrom from the modell**
-
 
 # Cleaning the dataset
-**Problem:**
+**Problem 1:** Extracting the plattfrom from the modell
+```{r,echo=F}
+head(data$modell)[2]
+```
+
+**Solution 1:** The plattform is always the second word in the ‘modell’ variable. So we need to extract the second word of every element of that variable.
+```{r,echo=F}
+GetPlattform <- function(x) {
+  require(stringr)
+  x <- gsub('VW','',x)
+  plattform <- str_extract(x, '[a-zA-Z]+')
+  return(plattform)
+}
+
+head(data$plattform <- as.factor(GetPlattform(data$modell)))[2]
+```
+
+
+
+# Cleaning the dataset
+**Problem 2:** The names of units are included in the datafields and the variable is therefore of type character, while it should be integer or numeric.
+
+```{r,echo=F,tidy=TRUE, tidy.opts=list(width.cutoff=50)}
+index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis') 
+kable(head(data[1:4,index[1:4]]),format = "markdown")
+```
+
+**Solution 2:** To remove the units from the data we will define a function that takes a character vector as input and extracts the first numerical sequence in every element of the input vector.
+
+
+
+# Cleaning the dataset
+```{r,echo=TRUE}
+GetValue <- function(x) {
+  require(stringr)
+  x <- gsub("'","",x)
+  x <- str_extract(x, '[0-9]+\\.*[0-9]*')
+  return(as.numeric(x))
+}
+```
+
+```{r,echo=FALSE}
+GetValue <- function(x) {
+  require(stringr)
+  x <- gsub("'","",x)
+  x <- str_extract(x, '[0-9]+\\.*[0-9]*')
+  return(as.numeric(x))
+}
+
+data <- within(data,{
+  kilometer <- GetValue(kilometer)
+  leergewicht <- GetValue(leergewicht)
+  verbrauch <- GetValue(verbrauch)
+  co2.emission <- GetValue(co2.emission)
+  garantie <- GetValue(garantie)
+  preis <- GetValue(preis)
+})
+
+index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis') 
+kable(head(data[1:4,index[1:4]]),format = "markdown")
+```
+
+
+
+# Cleaning the dataset
+**Further problems:**  
+
+1. Variables are encoded as integer, while they should rather be treated as factors.  
+
+2.Calculating the age of the vehicle from the variable 'inverkehrssetzung'.
+
 
 
 # Descriptive Analysis
