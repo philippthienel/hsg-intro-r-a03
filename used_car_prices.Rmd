@@ -49,10 +49,10 @@ Following R libraries will be required:
 * reshape2
 
 ```{r include=FALSE}
+library(ggplot2)
 library(knitr)
 library(stringr)
 library(reshape2)
-library(ggplot2)
 ```
 
 
