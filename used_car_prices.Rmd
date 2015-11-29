@@ -19,7 +19,7 @@ output: pdf_document
 #### 3.3 Adding features to data
 ### 4. Explorative analysis
 ### 5. Fitting a linear model
-### 6. Evluation of fit and predictive power
+### 6. Evaluation of fit and predictive power
 
 \pagebreak
 
@@ -35,10 +35,10 @@ The dataset contains records of a website selling used cars from Jul 2011. Along
 5. Illustrate your findings graphically as well as in tabular and text form.
 
 # 2. Reproducing the analysis
-To reproduce the analysis the reader can just excute all steps as shown by himself. Alternatively (and ) under the following url 'https://github.com/philippthienel/hsg-intro-r-a03' a repository can be found including all required scripts, functions and datasets.
+To reproduce the analysis the reader can just execute all steps as shown by himself. Alternatively (and ) under the following url 'https://github.com/philippthienel/hsg-intro-r-a03' a repository can be found including all required scripts, functions and datasets.
 
 ## 2.1 Structure of the documents
-Explain how data, files, funtions etc. are organized, Where what can be found.
+Explain how data, files, functions etc. are organized, Where what can be found.
 
 ## 2.2 Dependencies & required libraries
 Following R libraries will be required:
@@ -84,7 +84,7 @@ index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 
 kable(head(data[,index]))
 ```
 
-To remove the units from the data we will define a function that takes a character vector as input, extracts the first numerical sequence in every element of the input vector and returns these tuples in a numerical ourput vector of the same length as the input.
+To remove the units from the data we will define a function that takes a character vector as input, extracts the first numerical sequence in every element of the input vector and returns these tuples in a numerical output vector of the same length as the input.
 
 ```{r}
 GetValue <- function(x) {
@@ -156,9 +156,9 @@ data$plattform <- as.factor(GetPlattform(data$modell))
 ```
 
 **2. Calculating the age of the vehicle**
-We can get the motnh and year of the first registration from the variable 'inverkehrssetzung'. This variable is of type factor and has the structure: 'month-year', so for example '01-2011'.
+We can get the month and year of the first registration from the variable 'inverkehrssetzung'. This variable is of type factor and has the structure: 'month-year', so for example '01-2011'.
 
-To calculate the age we define a function that takes a factor variable as input. Splits the factor by '-' in two columns (month and year) and then calculates the difference between the month of the first registration and july 2011. 
+To calculate the age we define a function that takes a factor variable as input. Splits the factor by '-' in two columns (month and year) and then calculates the difference between the month of the first registration and July 2011. 
 
 ```{r}
 GetAge <- function(x, month=7, year=2011) {
@@ -175,7 +175,7 @@ We call that function on the 'inverkehrssetzung' variable to calculate the appro
 data$age <- GetAge(data$inverkehrssetzung)
 ```
 
-**3. Calculating displacement in litres**
+**3. Calculating displacement in liters**
 This is just the simple measure of scaling the variable 'hubrauminccm' down by factor 1000. We will keep one decimalpoint however, since it is customary to indicate the size of the engine like that.
 
 ```{r}
