@@ -31,14 +31,14 @@ data <- read.csv(path.data, sep=',')
 
 
 
-# Dataset and Assignment
+# 1. Dataset and Assignment
 **Dataset:**
 
 Messy dataset that contains 1'170 records of a website selling used cars from July 2011. Along with the price there are 21 characteristics (kilometers, inverkehrssetzung, hubraum, etc.) of different VW station wagons (Golf, Passat, Bora, Caddy, Multivan).
 
 
 
-# Dataset and Assignment
+# 1. Dataset and Assignment
 **Assignment:**
 
 \textcolor{black}{1.} Import and clean messy dataset  
@@ -53,7 +53,7 @@ Messy dataset that contains 1'170 records of a website selling used cars from Ju
 
 
 
-# Cleaning the dataset
+# 2. Cleaning the dataset
 **Problem 1:** Extracting the plattfrom from the modell
 ```{r,echo=F}
 head(data$modell)[2]
@@ -73,7 +73,7 @@ head(data$plattform <- as.factor(GetPlattform(data$modell)))[2]
 
 
 
-# Cleaning the dataset
+# 2. Cleaning the dataset
 **Problem 2:** The names of units are included in the datafields and the variable is therefore of type character, while it should be integer or numeric.
 
 ```{r,echo=F,tidy=TRUE, tidy.opts=list(width.cutoff=50)}
@@ -85,7 +85,7 @@ kable(head(data[1:4,index[1:4]]),format = "markdown")
 
 
 
-# Cleaning the dataset
+# 2. Cleaning the dataset
 ```{r,echo=TRUE}
 GetValue <- function(x) {
   require(stringr)
@@ -118,17 +118,17 @@ kable(head(data[1:4,index[1:4]]),format = "markdown")
 
 
 
-# Cleaning the dataset
+# 2. Cleaning the dataset
 **Further problems:**  
 
-1. Variables are encoded as integer, while they should rather be treated as factors.  
+\textcolor{black}{1.} Variables are encoded as integer, while they should rather be treated as factors.  
 
-2.Calculating the age of the vehicle from the variable 'inverkehrssetzung'.
-
-
-
-# Descriptive Analysis
+\textcolor{black}{2.} Calculating the age of the vehicle from the variable 'inverkehrssetzung'.
 
 
-# Multivariate Analysis
+
+# 3. Descriptive Analysis
+
+
+# 4. Multivariate Analysis
 
