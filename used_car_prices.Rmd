@@ -133,7 +133,7 @@ data <- within(data,{
 Three additional features that can be extracted from the existing variables are:
 
 1. plattform of the model (Golf, Bora, Passat etc.) - can be extracted from the 'modell' variable
-2. age of the car in months and years - we will just take the time difference between first registration and July 2011 (when the data was sampled) as an approximation 
+2. age of the car in months - we will just take the time difference between first registration and July 2011 (when the data was sampled) as an approximation 
 3. displacement in litres - can be optained by dividing 'hubrauminccm' by 1000
 
 **1. Extracting the 'plattform' from the 'model' variable.**
@@ -193,7 +193,6 @@ Steps:
 3. Preis - the dependent variable
 4. Numeric covariates of interest
 5. Factor variables
-6. Outliers
 
 ##4.1 Descriptive analysis of dataset
 Looking at the basics, we are primarily interested in the following metrics:
@@ -258,17 +257,54 @@ Yes, we would. Easy to see, that 'energieefizienz' is missing disproportionally 
 If we would use that variable in our regression later, we would have to pay special attention on how to treat missing variables.
 ```{r}
 plot <- ggplot(data, aes(x=preis, fill = is.na(energieeffizienz)))
-plot <- plot + geom_histogram(alpha = 0.6)
-plot
+plot <- plot + geom_histogram(alpha = 0.6, binwidth=1000, colour="black")
+plot + scale_fill_manual(values=c("red","blue"))
 ```
 
 
 ## 4.3 Preis - the dependent variable
 
+Numerical distribution measures lead to observations:
+
+* something
+* something 2
+
+```{r}
+kable(t(as.matrix(summary(data$preis))))
+```
+
+Graphical representation by histogram.
+Obersations:
+
+* Bimodal
++ might be sampling problem
++ might be other economic reasons in the composition of population
+```{r}
+plot <- ggplot(data, aes(x=preis))
+plot <- plot + geom_histogram(binwidth=1000, fill="red", alpha=0.6, color="black")
+plot
+```
+
+'Preis' strongly dependent on 'age'
+```{r}
+plot <- ggplot(data, aes(x=preis, y=age, colour = age)) + geom_point()
+plot
+```
+
+Introducing variable 'young' (age < 60 months) and differentiate histogram by 'young'.
+```{r}
+# add binary variable 'young' if age < 60 months (5years)
+data$young <- ifelse(data$age <60, 1, 0)
+
+# graphical distribution differenciated by 'young'
+plot <- ggplot(data, aes(x=preis, fill=as.factor(young)))
+plot <- plot + geom_histogram(binwidth=1000, alpha=0.6, colour="black")
+plot + scale_fill_manual(values=c("red","blue"))
+```
 
 
 ## 4.4 Numeric covariates of interest
-Interested in mainyl 2 aspects:
+Interested in mainly 2 aspects:
 
 1. Dispersion of covariates
 2. Correlation between covariates
@@ -297,7 +333,7 @@ dataScaled <- data.frame(sapply(data[,numeric.covariates],FUN=ReScaling))
 ```
 
 Plot Boxplots to illustrate dispersion:
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 dataScaledMelt <- melt(dataScaled)
 plt <- ggplot(data=dataScaledMelt, aes(x=variable, y= value))
 plt + geom_boxplot(fill="red", alpha=0.6) + coord_flip()
@@ -321,4 +357,59 @@ corTile(data[,numeric.covariates], use="pairwise.complete.obs")
 ```
 
 ## 4.5 Categorical variables
+
+Selecting the relevant variables:
+```{r}
+# select relevant categorical variables (logical & factor)
+categoric.variables <- c('fahrzeugart', 'aussenfarbe', 'getriebeart', 'antrieb', 'treibstoff', 'tueren', 'sitze', 'zylinder', 'plattform', 'abmfk')
+kable(categoric.variables)
+```
+
+**Frequency tables**
+
+Categorical variables that allow for easy implementation of bianry dummy variables:
+```{r}
+kable(t(as.matrix(with(data, table(getriebeart)))))
+```
+
+```{r}
+kable(t(as.matrix(with(data, table(antrieb)))))
+```
+
+```{r}
+kable(t(as.matrix(with(data, table(treibstoff)))))
+```
+
+```{r}
+kable(t(as.matrix(with(data, table(abmfk)))))
+```
+
+Categorical variables that are highly concentrated on one value:
+```{r}
+kable(t(as.matrix(with(data, table(fahrzeugart)))))
+```
+
+```{r}
+kable(t(as.matrix(with(data, table(tueren)))))
+```
+
+```{r}
+kable(t(as.matrix(with(data, table(sitze)))))
+```
+
+```{r}
+kable(t(as.matrix(with(data, table(zylinder)))))
+```
+
+
+Categorical variables that are multidimensional:
+```{r}
+kable(t(as.matrix(with(data, table(aussenfarbe)))))
+```
+
+```{r}
+kable(t(as.matrix(with(data, table(plattform)))))
+```
+
+
 

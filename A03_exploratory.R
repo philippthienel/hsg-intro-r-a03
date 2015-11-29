@@ -17,6 +17,30 @@ ReScaling <- function(x){
 # -----------------------------------------------------------------------------#
 
 
+# preis
+# -----------------------------------------------------------------------------#
+# numerical distribution measures
+summary(data$preis)
+
+# graphical distribution
+plot <- ggplot(data, aes(x=preis))
+plot <- plot + geom_histogram(binwidth=1000, fill="red", alpha=0.6, color="black")
+plot
+
+# dependency of 'preis' on 'age'
+plot <- ggplot(data, aes(x=preis, y=age, colour = age)) + geom_point()
+plot
+
+# add binary variable 'young' if age < 60 months (5years)
+data$young <- ifelse(data$age <60, 1, 0)
+
+# graphical distribution differenciated by 'young'
+plot <- ggplot(data, aes(x=preis, fill=as.factor(young)))
+plot <- plot + geom_histogram(binwidth=1000, alpha=0.6, colour="black")
+plot + scale_fill_manual(values=c("red","blue"))
+# -----------------------------------------------------------------------------#
+
+
 
 # numeric covariates - dispersion
 # -----------------------------------------------------------------------------#
@@ -50,8 +74,23 @@ corTile(data[,numeric.covariates], use="pairwise.complete.obs")
 
 # categorical / factor variables
 # -----------------------------------------------------------------------------#
+# select relevant categorical variables (logical & factor)
+categoric.variables <- c('fahrzeugart', 'aussenfarbe', 'getriebeart', 'antrieb',
+                         'treibstoff', 'tueren', 'sitze', 'zylinder',
+                         'plattform', 'abmfk')
 
 
+# frequency tables
+with(data, table(fahrzeugart))
+with(data, table(aussenfarbe))
+with(data, table(getriebeart))
+with(data, table(antrieb))
+with(data, table(treibstoff))
+with(data, table(tueren))
+with(data, table(sitze))
+with(data, table(zylinder))
+with(data, table(plattform))
+with(data, table(abmfk))
 # -----------------------------------------------------------------------------#
 
 

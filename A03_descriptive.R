@@ -46,15 +46,15 @@ print(categorical.variables)
 # -----------------------------------------------------------------------------#
 count.na <- CountNA(data)
 print(data)
-# -----------------------------------------------------------------------------#
-
-
-
 
 # NA Barchart
-# -----------------------------------------------------------------------------#
 source("./functions/naBar.R")
 naBar(data)
+
+# bias in missing value
+plot <- ggplot(data, aes(x=preis, fill = is.na(energieeffizienz)))
+plot <- plot + geom_histogram(alpha = 0.6, binwidth=1000)
+plot + scale_fill_manual(values=c("red","blue"))
 # -----------------------------------------------------------------------------#
 
 
