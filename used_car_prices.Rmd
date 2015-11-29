@@ -17,7 +17,7 @@ output: pdf_document
 #### 3.1 Reading the data
 #### 3.2 Cleaning the data
 #### 3.3 Adding features to data
-### 4. Explorative analysis
+### 4. Descriptive analysis
 ### 5. Fitting a linear model
 ### 6. Evaluation of fit and predictive power
 
@@ -183,7 +183,7 @@ data$hubraum.liter <- round(data$hubraum/1000,1)
 ```
 
 
-#4. Explorative analysis
+#4. Descriptive analysis
 All relevant code can be found in 'A03_descriptive.R' and 'A03_explorative.R'.
 
 Steps:
