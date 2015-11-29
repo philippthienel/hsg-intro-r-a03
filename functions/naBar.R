@@ -1,4 +1,4 @@
-naBarChart <- function(x, exclude = TRUE, compare = FALSE){
+naBar <- function(x, exclude = TRUE, compare = FALSE){
     
     #count NAs per variable and stroe in named vector
     vectorNAs <- apply(x, 2, FUN = function(y) sum(is.na(y)))

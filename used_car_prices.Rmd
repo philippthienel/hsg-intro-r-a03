@@ -1,0 +1,323 @@
+---
+title: "An Introduction to R - Used Car Prices"
+author: "Lukas Vogt, Philipp Thienel"
+date: "28 November 2015"
+output: pdf_document
+---
+
+\pagebreak
+
+# Table of content
+
+### 1. The problem
+### 2. Reproducing the analysis
+#### 2.1 Structure of the documents
+#### 2.2 Dependencies & required libraries
+### 3. The dataset
+#### 3.1 Reading the data
+#### 3.2 Cleaning the data
+#### 3.3 Adding features to data
+### 4. Explorative analysis
+### 5. Fitting a linear model
+### 6. Evluation of fit and predictive power
+
+\pagebreak
+
+# 1. The problem
+The following problem was given:
+
+The dataset contains records of a website selling used cars from Jul 2011. Along with the price you find various characteristics of different VW station wagons (Golf, Passat, Bora, Caddy, Multivan).
+
+1. Import data and clean it appropriately
+2. Analyze the dataset from a descriptive point of view. What do you observe for prices? How have they potentially been sampled?
+3. Find a regression model that has the prices as dependent variable. Look at different models and try to identify variable that you expect to drive the price. Also think about dummies and interaction terms. Construct an additional variable “age”, i.e., the difference between the first registration (inverkehrssetzung) of the vehicle and Jul 2011.
+4. Which is the most reasonable / best regression model? Does it explain the prices well?
+5. Illustrate your findings graphically as well as in tabular and text form.
+
+# 2. Reproducing the analysis
+To reproduce the analysis the reader can just excute all steps as shown by himself. Alternatively (and ) under the following url 'https://github.com/philippthienel/hsg-intro-r-a03' a repository can be found including all required scripts, functions and datasets.
+
+## 2.1 Structure of the documents
+Explain how data, files, funtions etc. are organized, Where what can be found.
+
+## 2.2 Dependencies & required libraries
+Following R libraries will be required:
+
+* stringr
+* reshape2
+* knitr
+
+```{r include=FALSE}
+library(knitr)
+library(stringr)
+library(reshape2)
+library(ggplot2)
+```
+
+
+# 3. The dataset
+The dataset can be downloaded here: 'https://github.com/philippthienel/hsg-intro-r-a03'.
+According to the problem the dataset "contains records of a website selling used cars from Jul 2011". The dataset of interest is 'vw_station_wagon.csv'. The file 'variables.csv' provides a list of all variable names in the dataset along with english explanations.
+
+```{r}
+variable.names <- data <- read.csv("./data/variables.csv", sep=';')
+kable(variable.names)
+```
+
+
+## 3.1 Reading and the data
+The dataset is contained in the folder 'data'. The file 'A03_read_clean.R' contains all code to read and prepare the data for the analysis.
+
+We will read the dataset and assign the dataframe to 'data':
+```{r}
+path.data <- './data/vw_station_wagons.csv'
+data <- read.csv(path.data, sep=',')
+```
+
+## 3.2 Cleaning the data
+We can easily see that the dataset is not in a perfect condition for further analysis, particularly with regards to two points:
+
+**1. The names of units are included in the datafields and the variable is therefore of type character, while it should be integer or numeric.**
+```{r}
+index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis')
+kable(head(data[,index]))
+```
+
+To remove the units from the data we will define a function that takes a character vector as input, extracts the first numerical sequence in every element of the input vector and returns these tuples in a numerical ourput vector of the same length as the input.
+
+```{r}
+GetValue <- function(x) {
+  require(stringr)
+  x <- gsub("'","",x)
+  x <- str_extract(x, '[0-9]+\\.*[0-9]*')
+  return(as.numeric(x))
+}
+```
+
+Then we will call this function on all variables of the dataset, that included units, replacing the old values.
+```{r}
+data <- within(data,{
+  kilometer <- GetValue(kilometer)
+  leergewicht <- GetValue(leergewicht)
+  verbrauch <- GetValue(verbrauch)
+  co2.emission <- GetValue(co2.emission)
+  garantie <- GetValue(garantie)
+  preis <- GetValue(preis)
+})
+```
+
+As we can see, the variables are now numerical and do not include the units any longer.
+```{r}
+index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis')
+kable(head(data[,index]))
+```
+
+**2. Variables are encoded as integer, while they should rather be treated as factors.**
+```{r}
+kable(sapply(data[,c("tueren","sitze","zylinder")], class))
+kable(summary(data[,c("tueren","sitze","zylinder")]))
+```
+
+We can simply cast the respective variables as factors.
+```{r}
+data <- within(data,{
+  tueren <- as.factor(tueren)
+  sitze <- as.factor(sitze)
+  zylinder <- as.factor(zylinder)
+})
+```
+
+
+## 3.3 Adding features to the data
+Three aditional features that can be extracted from the existing variables are most obvious:
+
+1. plattform of the model (Golf, Bora, Passat etc.) - can be extracted from the 'modell' variable
+2. age of the car in months and years - we will just take the time difference between first registration and July 2011 (when the data was sampled) as an approximation 
+3. displacement in litres - can be optained by dividing 'hubrauminccm' by 1000
+
+**1. Extracting the 'plattform' from the 'model' variable.**
+The plattform is always the second word in the 'modell' variable. So we need to extract only the second word of every element of that variable. 
+
+Noting that the first word is always 'VW' we can define a function 'GetPlattform' that takes a character vector as input, removes any string 'VW' from every element and then extracts always the first character sequence of length >= 1 until the first character that is not a letter.
+
+```{r}
+GetPlattform <- function(x) {
+  require(stringr)
+  x <- gsub('VW','',x)
+  plattform <- str_extract(x, '[a-zA-Z]+')
+  return(plattform)
+}
+```
+
+We call this function on the variable 'modell' to extract the plattform and assign it to the variable 'plattform'
+```{r}
+data$plattform <- as.factor(GetPlattform(data$modell))
+```
+
+**2. Calculating the age of the vehicle**
+We can get the motnh and year of the first registration from the variable 'inverkehrssetzung'. This variable is of type factor and has the structure: 'month-year', so for example '01-2012'.
+
+To calculate the age we define a function that takes a factor variable as input. Splits the factor by '-' in two columns (month and year) and then calculates the difference between the month of the first registration and july 2011. 
+
+```{r}
+GetAge <- function(x, month=7, year=2011) {
+  require(reshape2)
+  df <- colsplit(x,"-",names=c("month","year"))
+  age <- (year - df$year)*12 + (month - df$month)
+  return(age)
+}
+```
+
+We call that function on the 'inverkehrssetzung' variable to calculate the approximate age of the vehicle and assign the values to the new variable 'age'.
+
+```{r}
+data$age <- GetAge(data$inverkehrssetzung)
+```
+
+**3. Calculating displacement in litres**
+This is just the simple measure of scaling the variable 'hubrauminccm' down by factor 1000. We will keep one decimalpoint however, since it is customary to indicate the size of the engine like that.
+
+```{r}
+data$hubraum.liter <- round(data$hubraum/1000,1)
+```
+
+
+#4. Explorative analysis
+All relevant code can be found in 'A03_descriptive.R' and 'A03_explorative.R'.
+
+Steps:
+
+1. Descriptive analysis of dataset
+2. Missing values
+3. Preis - the dependent variable
+4. Numeric covariates of interest
+5. Factor variables
+6. Outliers
+
+##4.1 Descriptive analysis of dataset
+Looking at the basics, we are primarily interested in the following metrics:
+
+**Number of observations and variables**
+```{r}
+dimensions <- dim(data)
+names(dimensions) <- c("observations","variables")
+kable(dimensions)
+```
+
+**Types of variables**
+Determine class for every variable in the dataset.
+```{r}
+variables <- sapply(data, class)
+```
+
+Numerical variables:
+```{r}
+numerical.variables <- variables[variables %in% c("integer","numeric")]
+kable(numerical.variables)
+```
+
+Categorical variables:
+```{r}
+categorical.variables <- variables[variables %in% c("factor","logical")]
+kable(categorical.variables)
+```
+
+
+## 4.2 Missing values
+
+```{r}
+CountNA <- function(df){
+  count <- sapply(df, FUN = function(x) sum(is.na(x)))
+  count <- data.frame(variable = names(count), count.na = count,
+                         row.names=NULL)
+  count <- count[count$count.na>0,]
+  index <- order(count$count.na, decreasing=T)
+  return(count[index,])
+}
+```
+
+```{r}
+count.na <- CountNA(data)
+kable(count.na)
+```
+
+```{r}
+source("./functions/naBar.R")
+```
+
+```{r}
+naBar(data)
+```
+
+**Bias in missing values**
+Would we introduce a selection bias if we exclude the observations where the variable 'energieeffizienz' is missing?
+
+Yes, we would. Easy to see, that 'energieefizienz' is missing disproportionally in lower ranges of the dependent variable 'preis'.
+
+If we would use that variable in our regression later, we would have to pay special attention on how to treat missing variables.
+```{r}
+plot <- ggplot(data, aes(x=preis, fill = is.na(energieeffizienz)))
+plot <- plot + geom_histogram(alpha = 0.6)
+plot
+```
+
+
+## 4.3 Preis - the dependent variable
+
+
+
+## 4.4 Numeric covariates of interest
+Interested in mainyl 2 aspects:
+
+1. Dispersion of covariates
+2. Correlation between covariates
+
+**Dispersion**
+To get a better comparaility of dispersion some normalization or rescaling needed.
+
+Decided to rescale all variables to the interval [0,1]. Where 0 is given by the minimum of the respective variable and 1 by the maximum.
+
+Define function:
+```{r}
+ReScaling <- function(x){
+  x.min <- min(x, na.rm = TRUE)
+  x.max <- max(x, na.rm = TRUE)  
+  y <- (x - x.min)/(x.max - x.min)
+  return(y)
+}
+
+```
+
+Rescale variables:
+```{r}
+numeric.covariates <- names(data)[sapply(data, class) %in% c("integer","numeric")]
+
+dataScaled <- data.frame(sapply(data[,numeric.covariates],FUN=ReScaling))
+```
+
+Plot Boxplots to illustrate dispersion:
+```{r, warning=FALSE}
+dataScaledMelt <- melt(dataScaled)
+plt <- ggplot(data=dataScaledMelt, aes(x=variable, y= value))
+plt + geom_boxplot(fill="red", alpha=0.6) + coord_flip()
+```
+
+**Correlation between covariates**
+
+```{r}
+# create correlation matrix
+cor.matrix <- cor(data[,numeric.covariates], use="pairwise.complete.obs")
+kable(cor.matrix[,1:5])
+kable(cor.matrix[,6:10])
+```
+
+```{r}
+source("./functions/corTiles.R")
+```
+
+```{r}
+corTile(data[,numeric.covariates], use="pairwise.complete.obs")
+```
+
+## 4.5 Categorical variables
+
