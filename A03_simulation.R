@@ -36,7 +36,8 @@ ProbFH <- function(deck,nPL,nDrws,nSim){
   #  nSim: Number of simulations
   #
   # Returns:
-  #  Number of simulations, number of occurences of two players having a full house, probability of two players having a full house
+  #  Number of simulations, number of occurences of two players having a full
+  # house, probability of two players having a full house
   #
   # Initial value count full house
   count.fullhouse <- 0
@@ -83,7 +84,8 @@ ProbRF<-function (deck,nSim,nDrws) {
   #  nDraws: Number of cards drawn
   #
   # Returns:
-  #  Number of simulations, number of occurences of a royal flush, probability of a royal flush
+  #  Number of simulations, number of occurences of a royal flush, probability
+  # of a royal flush
   #
   # Initial value count royal flush
   count.royalflush<-0

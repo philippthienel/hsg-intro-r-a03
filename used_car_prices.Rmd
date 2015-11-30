@@ -19,7 +19,8 @@ output: pdf_document
 #### 3.3 Adding features to data
 ### 4. Explorative analysis
 ### 5. Fitting a linear model
-### 6. Evaluation of fit and predictive power
+#### 5.1
+### 6. Poker Simulation
 
 \pagebreak
 
@@ -513,6 +514,59 @@ kable(summary(fit4)$coefficients)
 ```
 
 ## 5.4 Goodness of fit
+
+
+# 6. Poker Simulation 
+
+## 6.1 Theproblem
+
+The following problem was given:
+
+Suppose you play cards with friends. You have a deck of 52 cards with 13 ranks and 4 suits (clubs, diamonds, spades, and hearts). Think of the deck as a typical poker deck. Suppose you are 6 players and each is dealt 5 cards. Find by means of a simulation (i.e., dealing cards, for 100, 10000, 100000 times) the following (approximate) probabilities:
+
+1. The probability that any two players are dealt a Full House?
+2. Player 1 is dealt a Royal Flush (a Royal Flush is hand consisting of the cards 9,10,11,12,13 of a single suit)
+
+## 6.2 The simulation
+
+The file containing the full script to run the simulation is saved as 'A03_simulation.R'.
+
+The script contains four functions:
+
+1. DrawHands: Deal hand to each player
+2. CheckFH: Check if one player has a full house
+3. ProbFH: Compute probability of any two players having a full house in one game
+4. ProbRF: Compute probability that player 1 has a royal flush
+
+**ProbFH**
+
+Compute probability of any two players having a full house in one game
+
+Args:
+
+* deck: Card deck
+* nPL: Number of players
+* nDrws: Number of cards drawn
+* nSim: Number of simulations
+  
+Returns:
+
+* Number of simulations, number of occurences of two players having a full house, probability of two players having a full house
+  
+**ProbRF**
+
+Compute probability that player 1 has a royal flush
+
+Args:
+
+* deck: Card deck
+* nSim: Number of simulations
+* nDraws: Number of cards drawn
+
+Returns:
+
+* Number of simulations, number of occurences of a royal flush, probability of a royal flush
+
 
 
 
