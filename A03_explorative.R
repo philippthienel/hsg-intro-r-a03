@@ -25,11 +25,11 @@ summary(data$preis)
 # graphical distribution
 plot <- ggplot(data, aes(x=preis))
 plot <- plot + geom_histogram(binwidth=1000, fill="red", alpha=0.6, color="black")
-plot
+plot + labs(title="Histogram: 'preis' - Distribution of priceclasses in CHF")
 
 # dependency of 'preis' on 'age'
 plot <- ggplot(data, aes(x=preis, y=age, colour = age)) + geom_point()
-plot
+plot + labs(title="Relationship between price and age")
 
 # add binary variable 'young' if age < 60 months (5years)
 data$young <- ifelse(data$age <60, 1, 0)
@@ -37,7 +37,9 @@ data$young <- ifelse(data$age <60, 1, 0)
 # graphical distribution differenciated by 'young'
 plot <- ggplot(data, aes(x=preis, fill=as.factor(young)))
 plot <- plot + geom_histogram(binwidth=1000, alpha=0.6, colour="black")
-plot + scale_fill_manual(values=c("red","blue"))
+plot <- plot + scale_fill_manual(values=c("red","blue"))
+plot + labs(title="Distribution of priceclasses for 'young' and 'old' cars",
+            fill = "age < 60 months")
 # -----------------------------------------------------------------------------#
 
 
