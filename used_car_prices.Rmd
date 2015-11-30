@@ -615,9 +615,8 @@ RMSE.compare <- melt(RMSE.compare)
 ```
 
 ```{r}
-plot <- ggplot(RMSE.compare, aes(x=value, fill=variable))
+plot <- ggplot(RMSE.compare, aes(x=value, colour=variable))
 plot <- plot + geom_density()
-plot <- plot + scale_fill_manual(values=c("blue1","blue2","blue3","blue4"))
 plot + labs(title="Density-distribution of Root Mean Squared Error",
             colour="model")
 ```
