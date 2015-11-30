@@ -44,6 +44,11 @@ print(categorical.variables)
 
 # Missing Values
 # -----------------------------------------------------------------------------#
+
+# observations that do not havy any missing values
+print(sum(complete.cases(data)))
+
+# missing values per variable
 count.na <- CountNA(data)
 print(data)
 
@@ -53,8 +58,10 @@ naBar(data)
 
 # bias in missing value
 plot <- ggplot(data, aes(x=preis, fill = is.na(energieeffizienz)))
-plot <- plot + geom_histogram(alpha = 0.6, binwidth=1000)
-plot + scale_fill_manual(values=c("red","blue"))
+plot <- plot + geom_histogram(alpha = 0.6, binwidth=1000, colour="black")
+plot <- plot + scale_fill_manual(values=c("red","blue"))
+plot + labs(fill = 'energieeffizien is\nmissing',
+            title="Distribution of 'preis' depending on 'energieeffizienz'")
 # -----------------------------------------------------------------------------#
 
 
