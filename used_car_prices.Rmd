@@ -18,8 +18,16 @@ output: pdf_document
 #### 3.2 Cleaning the data
 #### 3.3 Adding features to data
 ### 4. Explorative analysis
-### 5. Fitting a linear model
-#### 5.1
+#### 4.1 Descriptive analysis of the dataset
+#### 4.2 Dependent variable - 'preis'
+#### 4.3 Numeric covariates
+#### 4.4 Categorical variables
+### 5. Regression 
+#### 5.1 Variable selection
+#### 5.2 Constructing dummy variables
+#### 5.3 Fitting linear models
+#### 5.4 Goodness of fit
+#### 5.5 Result
 ### 6. Poker Simulation
 
 \pagebreak
@@ -47,10 +55,11 @@ The data folder contains the dataset that will be used in this analysis under th
 
 The R scripts containing all code used in this analysis are:
 
-* A03_read_clean.R -
-* A03_descriptive.R - 
-* A03_explorative.R - 
-* A03_simulation.R -
+* A03_read_clean.R
+* A03_descriptive.R 
+* A03_explorative.R
+* A03_linear_model.R
+* A03_simulation.R
 
 ## 2.2 Dependencies & required libraries
 Following R libraries will be required to run the analysis:
@@ -222,7 +231,7 @@ The exploratorive analysis is structured as follows:
 3. Numeric covariates
 4. Factor variables
 
-##4.1 Descriptive analysis of dataset
+##4.1 Descriptive analysis of the dataset
 First we will provide some basic facts about the dataset that we are dealing with. We are primarily interested in the following metrics:
 
 1. Dimensions of the dataset: number of observations and variables
@@ -339,42 +348,48 @@ A graphical representation of the distribution of 'preis' helps to substantiate 
 ```{r}
 plot <- ggplot(data, aes(x=preis))
 plot <- plot + geom_histogram(binwidth=1000, fill="red", alpha=0.6, color="black")
-plot
+plot+ labs(title="Histogram: 'preis' - Distribution of priceclasses in CHF")
 ```
 
 
+This behavior could potentially stem from sampling issues. If the sampling contains a strong selection bias then we might end up sampling only 2 subgroups (2 price-classes) of the underlying population.
+
+Another explanation would be that the underlying population of used cars just exhibits naturally such a price structure. A reason for this might be that car owners either sell their car when it is still relatively new, or when it is already pretty old. And the prices just reflect this natural selling behavior.
 
 
-'Preis' strongly dependent on 'age'
+Looking at the relationship between 'preis' and 'age' we find that it almost follows a strong linear trend.
 ```{r}
 plot <- ggplot(data, aes(x=preis, y=age, colour = age)) + geom_point()
-plot
+plot + labs(title="Relationship between price and age")
 ```
 
-Introducing variable 'young' (age < 60 months) and differentiate histogram by 'young'.
+If we introduce a  variable 'young' (age < 60 months) and differentiate the 'preis' histogram by this variable, we find indeed two subgroups that differ strongly in price distribution and age.
+
 ```{r}
 # add binary variable 'young' if age < 60 months (5years)
 data$young <- ifelse(data$age <60, 1, 0)
+data$young <- as.factor(data$young)
 
 # graphical distribution differenciated by 'young'
-plot <- ggplot(data, aes(x=preis, fill=as.factor(young)))
+plot <- ggplot(data, aes(x=preis, fill= young))
 plot <- plot + geom_histogram(binwidth=1000, alpha=0.6, colour="black")
-plot + scale_fill_manual(values=c("red","blue"))
+plot <- plot + scale_fill_manual(values=c("red","blue"))
+plot + labs(title="Distribution of priceclasses for 'young' and 'old' cars", fill = "age < 60 months")
 ```
 
 
-## 4.3 Numeric covariates of interest
-Interested in mainly 2 aspects:
+## 4.3 Numeric covariates
+As a preparation for the regression model later on it is valuable to gain some insights into the distribution of the covariates.
+
+We are mainly interested in two aspects:
 
 1. Dispersion of covariates
 2. Correlation between covariates
 
-**Dispersion**
-To get a better comparaility of dispersion some normalization or rescaling needed.
+**1. Dispersion**
+To get a better comparaility of dispersion some normalization or is useful. We will rescale all variables to the interval [0,1]. Where 0 is given by the minimum of the respective variable and 1 by the maximum. This allows for an easier graphical comparison of the dispersion of the variables.
 
-Decided to rescale all variables to the interval [0,1]. Where 0 is given by the minimum of the respective variable and 1 by the maximum.
-
-Define function:
+First we define a short function to rescale a numerical vector:
 ```{r}
 ReScaling <- function(x){
   x.min <- min(x, na.rm = TRUE)
@@ -385,28 +400,50 @@ ReScaling <- function(x){
 
 ```
 
-Rescale variables:
+Then we apply this function to all numerical or integer variables and save the rescald variables in a new dataframe 'dataScaled'.
 ```{r}
 numeric.covariates <- names(data)[sapply(data, class) %in% c("integer","numeric")]
 
 dataScaled <- data.frame(sapply(data[,numeric.covariates],FUN=ReScaling))
 ```
 
-Plot Boxplots to illustrate dispersion:
+
+We use boxplots to visualize the dispersion of all variables. We can observe the following:
+
+* the variable 'verbrauch' seems to be dominated by one extreme outlier at the upper end, while the rest of the values is relatively close together
+* 'age', 'kilometer' and 'garantie' show the highest (relative) spread
+* most other variables show a relatively low spread, where 50% of their values cover less than 25% of the range
+
 ```{r, warning=FALSE, message=FALSE}
 dataScaledMelt <- melt(dataScaled)
 plt <- ggplot(data=dataScaledMelt, aes(x=variable, y= value))
-plt + geom_boxplot(fill="red", alpha=0.6) + coord_flip()
+plt <- plt + geom_boxplot(fill="red", alpha=0.6) + coord_flip()
+plt + labs(title="Boxplots of Rescaled Numerical Variables", x=NULL, y=NULL)
 ```
 
-**Correlation between covariates**
 
+**2. Correlation between covariates**
+
+Correlations between the covariates and the dependent variable and among the covariates can give valueable input for the variable selection in the regression model.
+
+Correlation Matrix:
 ```{r}
 # create correlation matrix
 cor.matrix <- cor(data[,numeric.covariates], use="pairwise.complete.obs")
 kable(cor.matrix[,1:5])
+```
+
+Correlation Matrix (continued):
+```{r}
 kable(cor.matrix[,6:10])
 ```
+
+Since the numerical correlation matrix is somewhat unintuitive at first glance, will represent this matrix as a tile plot, where the colour gradient indicates the degree of correlation. More detaled explanation of the function 'corTile' can be found in the file 'corTile.R' in the functions folder.
+
+With respect to correlations we can observe some very useful facts:
+
+* there is a strong negative correlation between 'preis' and 'age' and 'preis' and 'kilometer'
+* unfortunately 'age' and 'kilometer' are strongly correlated themselves
 
 ```{r}
 source("./functions/corTiles.R")
@@ -418,40 +455,29 @@ corTile(data[,numeric.covariates], use="pairwise.complete.obs")
 
 ## 4.4 Categorical variables
 
-Selecting the relevant variables:
-```{r}
-# select relevant categorical variables (logical & factor)
-categoric.variables <- c('fahrzeugart', 'aussenfarbe', 'getriebeart', 'antrieb', 'treibstoff', 'tueren', 'sitze', 'zylinder', 'plattform', 'abmfk')
-kable(categoric.variables)
-```
 
 **Frequency tables**
 
-Categorical variables that allow for easy implementation of bianry (dummy) variables:
+Of main interest are the categorical variables that allow for easy implementation of binary (dummy) variables for the regression modeling later on.
+
+The variable 'getriebeart' (gear shift) can take the values 'Automat' and 'Handschaltung' (automativ and manual). While 'Handschaltung' dominates, the proportion with an automatic gear shift is not insignificant.
 ```{r}
 kable(t(as.matrix(with(data, table(getriebeart)))))
 ```
 
+'Antrieb' indicates wether a car has a four-wheel, front-wheel or back-wheel-drive. The 'Vorderradantrieb' (front-wheel-drive) clearly dominates, although there is again a significant number of cars with 'Allrad' (four-wheel-drive).
 ```{r}
 kable(t(as.matrix(with(data, table(antrieb)))))
 ```
 
+'Treibstoff' indicates what kind of fuel a car uses. 'Benzin' (standard gas) is in the majority, although a significant portion uses 'diesel'.
 ```{r}
 kable(t(as.matrix(with(data, table(treibstoff)))))
 ```
 
+'abmfk' indicates wether a car has a certain emission certification with respect to exhaust fumes. This variable is almost evenly split.
 ```{r}
 kable(t(as.matrix(with(data, table(abmfk)))))
-```
-
-
-Categorical variables that are multivariate:
-```{r}
-kable(t(as.matrix(with(data, table(aussenfarbe)))))
-```
-
-```{r}
-kable(t(as.matrix(with(data, table(plattform)))))
 ```
 
 
@@ -461,7 +487,14 @@ kable(t(as.matrix(with(data, table(plattform)))))
 
 We can base the decision on which variables to include in our regression on both economic reasoning and on the statistical evidence we found so far in the explorative analysis.
 
+The four categorical variables we have discussed earlier are all economically likely to have an impact on the sales price of a car:
 
+* automatic shift: higher convenience (higher price)
+* four-wheel-drive: higher versatility (higher price)
+* uses diesel: lower fuel cost (higher price)
+* 'abmfk': has impact on where the car can be driven and on taxation (lower price if not present)
+
+From the correlation analysis we are most interested in the variables 'age' and 'kilometer' as they both correlated strongly with 'preis'.
 
 ## 5.2 Constructing dummy variables
 
@@ -482,43 +515,119 @@ data$by4 <- ifelse(data$antrieb == "Allrad", 1, 0)
 
 ## 5.3 Fitting linear models
 
+We will now fit four different linear regression models and estimate their coeficients.
+
 **1. A naive model**
 
+The first model is very simple in it's structure. We estimate a linear dependency of 'preis' on 'age' and 'kilometer'. Interestingly both coefficients are statistically significant on 99.9% confidence.
+
 ```{r}
-fit1 <- lm(preis ~ age + kilometer, data)
+formula1 <- 'preis ~ age + kilometer'
+fit1 <- lm(formula1, data)
 kable(summary(fit1)$coefficients)
 ```
 
 **2. A linear model with level effects in age (decreasing)**
 
+Instead of including age linearly in the model we take now the square root of age. The economic intuition behind this is, that the (negative) impact of an additional unit of age decreases with the overall age of a car.
+
 ```{r}
-fit2 <- lm(preis ~ sqrt(age) + kilometer ,data)
+formula2 <- 'preis ~ sqrt(age) + kilometer'
+fit2 <- lm(formula2, data)
 kable(summary(fit2)$coefficients)
 ```
 
 
 **3. A linear model with level effects in age (decreasing) and dummies**
 
+We now add three dummy variables to the model. We tested using 'abmfk' as well, but could not find a significant effect of this variable.
+
 ```{r}
-fit3 <- lm(preis ~ sqrt(age) + kilometer + diesel + by4 + automatic , data)
+formula3 <- 'preis ~ sqrt(age) + kilometer + diesel + by4 + automatic'
+fit3 <- lm(formula3, data)
 kable(summary(fit3)$coefficients)
 ```
 
 
 **4. A linear model with maximum fit (with significant coefficients)**
 
+The last model is our best fit model. We added more numeric covariates, such as:
+
+* 'leistunginps' - the horsepower
+* 'garantie' - months in warranty
+* 'leergewicht' - weight when empty
+
 ```{r}
-fit4 <- lm(preis ~ sqrt(age) + kilometer + leistunginps + garantie + 
-             leergewicht + diesel + by4 + automatic , data)
+formula4 <- 'preis ~ sqrt(age) + kilometer + leistunginps + garantie + 
+             leergewicht + diesel + by4 + automatic'
+fit4 <- lm(formula4, data)
 kable(summary(fit4)$coefficients)
 ```
 
 ## 5.4 Goodness of fit
 
+A standard measure to evaluate if a model fits well is the so called *R Squared*. It measures how much of the total variation in the dependent variable can be explained by the model. We can simply acess the R Squared from our regression analysis and compare them. By this measure the last (and biggest) model clearly outperforms the other models.
+
+```{r}
+r.sq <- data.frame(name = c("fit1","fit2","fit3","fit4"),
+                   r.squared = c(summary(fit1)$r.squared,
+                                 summary(fit2)$r.squared,
+                                 summary(fit3)$r.squared,
+                                 summary(fit4)$r.squared))
+kable(r.sq)
+```
+
+
+However, only looking at the R Squared might not be a good idea. R Squared measures only the goodness of fit in the data on which the model was optimized on. But what would happen if we needed to predict the 'preis' based on our model but on new data?
+
+A common measure for the predictive quality of a model is the Root Mean Squared Error.
+
+To get an idea what the predictive quality of our four models would be like we chose the following approach:
+
+1. We split the existing dataset randonly into a training and a test dataset
+2. We optimize (train) our models on the training dataset
+3. Then we use the models to predict the 'preis' on the test dataset
+4. We compare the prediction with the actual values and calculate the Root Mean Squared Error
+
+All this handles the function 'RMSEPredict'. For further information on the function just access the file directly. It is located in the functions folder.
+
+Just calculating the RMSE once for the four models might still not be enough. Since we randomly split the dataset into test and trainig sets, we could just be unlucky in this assignment and not come to a fair comparison.
+
+Therefore we will calculate the RMSE 300 times per model and compare the densitiy distributions of the RSME's, rather than just one RMSE each.
+
+```{r}
+source("./functions/RMSEPredict.R")
+```
+
+
+```{r, cache=TRUE}
+# calculate RMSE's
+RMSE1 <- replicate(100, RMSEPredict(formula1, data, alpha=0.8))
+RMSE2 <- replicate(100, RMSEPredict(formula2, data, alpha=0.8))
+RMSE3 <- replicate(100, RMSEPredict(formula3, data, alpha=0.8))
+RMSE4 <- replicate(100, RMSEPredict(formula4, data, alpha=0.8))
+```
+
+```{r, message=FALSE,warning=FALSE}
+# create data frame
+RMSE.compare <- data.frame(RMSE1, RMSE2, RMSE3, RMSE4)
+RMSE.compare <- melt(RMSE.compare)
+```
+
+```{r}
+plot <- ggplot(RMSE.compare, aes(x=value, colour=variable))
+plot <- plot + geom_density()
+plot + labs(title="Density-distribution of Root Mean Squared Error",
+            colour="model")
+```
+
+## 5.5 Result
+
+As we can see from the density plot the last model (fit4) also exhibits the better RMSE. We can conclude that from our models so far, this model is indeed the best model. It has the highest fit to the data and also the lowest expected RMSE, when predicting new data.
 
 # 6. Poker Simulation 
 
-## 6.1 Theproblem
+## 6.1 The problem
 
 The following problem was given:
 
