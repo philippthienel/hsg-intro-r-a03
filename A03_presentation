@@ -1,7 +1,7 @@
 ---
 title: "Used Car Prices"
 author: "Lukas Vogt and Philipp Thienel"
-date: "November 29, 2015"
+date: "November 30, 2015"
 output:
   beamer_presentation:
     colortheme: beaver
@@ -14,7 +14,6 @@ library(stringr)
 library(reshape2)
 library(ggplot2)
 library(xtable)
-setwd('C:/Users/Lukas/Downloads/hsg-intro-r-a03-master/hsg-intro-r-a03-master')
 path.data <- './data/vw_station_wagons.csv'
 data <- read.csv(path.data, sep=',')
 ```
@@ -54,7 +53,7 @@ Messy dataset that contains 1'170 records of a website selling used cars from Ju
 \textcolor{white}{2.1}  What do you observe for prices?  
 \textcolor{white}{2.2}  How have they potentially been sampled? 
 
-\textcolor{black}{3.} Multivariate analysis of the dataset: Different Regression Models 
+\textcolor{black}{3.} Multivariate analysis of the dataset: Regression Models 
 
 \textcolor{black}{4.} Most reasonable / best regression model?
 
@@ -199,11 +198,11 @@ naBar(data)
 
 # 3. Descriptive Analysis
 \textcolor{black}{3.} **Missing Values of Variables: Selection Bias**  
-Would we introduce a selection bias if we exclude the observations where the variable ‘energieeffizienz’ is missing?  
+Would we introduce a selection bias if we exclude the observations where the variable 'energieeffizienz' is missing?  
 
 Yes, we would. 
 
-‘Energieefizienz’ is missing disproportionally in lower ranges of the dependent variable ‘price’.
+'Energieefizienz' is missing disproportionally in lower ranges of the dependent variable 'preis'.
 
 # 3. Descriptive Analysis
 ```{r,echo=FALSE}
@@ -222,9 +221,9 @@ Summary statistic
 kable(t(as.matrix(summary(data$preis))),format = "markdown")
 ```
 
-Histogram of Price: Observe a binominal distribution  
-- might be sampling problem  
-- might be other economic reasons in the composition of population: Evidence that ‘Preis’ strongly dependent on ‘age’  
+Histogram of Preis: Observe a binominal distribution  
+-might be sampling problem  
+-might be other economic reasons in the composition of population: Evidence that 'preis' depends strongly on 'age'  
 
 We add binary variable 'young' if age < 60 months (5years) to show the dependency of 'preis' on 'age'
 
@@ -244,7 +243,7 @@ plot + scale_fill_manual(values=c("red","blue"),name=c("Young"))+labs(x = "Car P
 
 # 3. Descriptive Analysis
 \textcolor{black}{5.} **Correlation Matrix**  
-Strong negative correlation of 'preis' and 'age' is visibile in the correlation matrix. 
+Strong negative correlation of 'price' and 'age' is visibile in the correlation matrix. 
 ```{r,echo=FALSE,warning=FALSE}
 numeric.covariates <- names(data)[sapply(data, class) %in% c("integer","numeric")]
 cor.matrix <- cor(data[,numeric.covariates], use="pairwise.complete.obs")
@@ -255,4 +254,56 @@ corTile(data[,numeric.covariates], use="pairwise.complete.obs")
 
 
 # 4. Multivariate Analysis
+**Three Regression Models:**  
 
+\textcolor{black}{1.} Standard Regression Model without Dummy Variables:  
+
+preis~age,data=data)
+
+\textcolor{black}{2.} Standard Regression Model with Dummy Variables:  
+
+```{r,echo=TRUE}
+preis~age  
+``` 
+
+\textcolor{black}{3.} Best Fit Regression Model:  
+
+```{r,echo=TRUE}
+preis~age  
+```
+
+
+# 4. Multivariate Analysis
+**Economic Rational of the Regression Variables:**  
+
+-Age/...: Independent variable(s) expected to effect the dependent variable 'preis'. E.g. the older a car, the less its value. 
+
+-Square Root Age: Model the (expected) decreasing impact of age on the value of the car
+
+-Dummy Variables: Expected to effect the dependent variable 'preis'. E.g. cars with or without automatic transmission are not an identical product.  
+
+
+
+# 4. Multivariate Analysis
+**Results of the Regression:**  
+
+
+
+
+
+# 4. Multivariate Analysis
+**Most reasonable / best regression model?**  
+
+-Both the Standard Regression Model with or without Dummy Variables are very reasonable and have a high R^2 (predictive power).  
+
+-The Best Fit Regression Model is "overfitted" and includes economocially non-reasonable variables (e.g. .  
+
+-Also, the prediction power of the Best Fit Model is only slightly higher than for the Standard Regression Models. 
+
+
+
+
+# 5. I-Wish-I-Had-Known-Before
+\textcolor{black}{1.} R Markdown: When you generate tables with kable() (libarary(knitr)) the format must be set to "markdown",i.e. kable(...,format="markdown")  
+
+\textcolor{black}{2.} R Markdown
