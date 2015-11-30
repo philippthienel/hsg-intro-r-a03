@@ -243,7 +243,8 @@ plot + scale_fill_manual(values=c("red","blue"),name=c("Young"))+labs(x = "Car P
 
 # 3. Descriptive Analysis
 \textcolor{black}{5.} **Correlation Matrix**  
-Strong negative correlation of 'price' and 'age' is visibile in the correlation matrix. 
+Strong negative cor. of 'price' and 'age' is visibile in the cor. matrix.  
+
 ```{r,echo=FALSE,warning=FALSE}
 numeric.covariates <- names(data)[sapply(data, class) %in% c("integer","numeric")]
 cor.matrix <- cor(data[,numeric.covariates], use="pairwise.complete.obs")
@@ -252,35 +253,54 @@ corTile(data[,numeric.covariates], use="pairwise.complete.obs")
 ```
 
 
-
-# 4. Multivariate Analysis
-**Three Regression Models:**  
-
-\textcolor{black}{1.} Standard Regression Model without Dummy Variables:  
-
-preis~age,data=data)
-
-\textcolor{black}{2.} Standard Regression Model with Dummy Variables:  
-
-```{r,echo=TRUE}
-preis~age  
-``` 
-
-\textcolor{black}{3.} Best Fit Regression Model:  
-
-```{r,echo=TRUE}
-preis~age  
-```
-
-
 # 4. Multivariate Analysis
 **Economic Rational of the Regression Variables:**  
 
 -Age/...: Independent variable(s) expected to effect the dependent variable 'preis'. E.g. the older a car, the less its value. 
 
--Square Root Age: Model the (expected) decreasing impact of age on the value of the car
+-Square Root Age: Model the (expected) decreasing impact of age on the value of the car.
 
 -Dummy Variables: Expected to effect the dependent variable 'preis'. E.g. cars with or without automatic transmission are not an identical product.  
+
+
+
+# 4. Multivariate Analysis
+**Three Regression Models:**  
+```{r,echo=FALSE}
+data$automatic <- ifelse(data$getriebeart == "Automat", 1, 0)
+data$diesel <- ifelse(data$treibstoff == "Diesel", 1, 0)
+data$by4 <- ifelse(data$antrieb == "Allrad", 1, 0)
+```
+\textcolor{black}{1.} **A linear model with level effects in age:** Adj. R^2 = 0.89   
+
+preis ~ sqrt(age) + kilometer  
+```{r,echo=FALSE}
+fit2 <- lm(preis ~ sqrt(age) + kilometer ,data)
+kable(summary(fit2)$coefficients,format="markdown")
+```
+
+
+
+# 4. Multivariate Analysis
+\textcolor{black}{2.} **A linear model with level effects in age and dummies:** Adj. R^2 = 0.90 
+
+preis ~ sqrt(age) + kilometer + diesel + by4 + automatic  
+```{r,echo=FALSE}
+fit3 <- lm(preis ~ sqrt(age) + kilometer + diesel + by4 + automatic , data)
+kable(summary(fit3)$coefficients,format="markdown")
+```
+
+
+
+# 4. Multivariate Analysis
+\textcolor{black}{3.} **A linear model with maximum fit:** Adj. R^2 = 0.92 
+
+preis ~ sqrt(age) + kilometer + leistunginps + garantie + leergewicht + diesel + by4 + automatic  
+```{r,echo=FALSE}
+fit4 <- lm(preis ~ sqrt(age) + kilometer + leistunginps + garantie +
+leergewicht + diesel + by4 + automatic , data)
+kable(summary(fit4)$coefficients,format="markdown")
+```
 
 
 
@@ -296,7 +316,7 @@ preis~age
 
 -Both the Standard Regression Model with or without Dummy Variables are very reasonable and have a high R^2 (predictive power).  
 
--The Best Fit Regression Model is "overfitted" and includes economocially non-reasonable variables (e.g. .  
+-The Best Fit Regression Model (with significant coefficients) is "overfitted".  
 
 -Also, the prediction power of the Best Fit Model is only slightly higher than for the Standard Regression Models. 
 
