@@ -17,7 +17,7 @@ output: pdf_document
 #### 3.1 Reading the data
 #### 3.2 Cleaning the data
 #### 3.3 Adding features to data
-### 4. Descriptive analysis
+### 4. Explorative analysis
 ### 5. Fitting a linear model
 ### 6. Evaluation of fit and predictive power
 
@@ -35,13 +35,24 @@ The dataset contains records of a website selling used cars from Jul 2011. Along
 5. Illustrate your findings graphically as well as in tabular and text form.
 
 # 2. Reproducing the analysis
-To reproduce the analysis the reader can just execute all steps as shown by himself. Alternatively (and ) under the following url 'https://github.com/philippthienel/hsg-intro-r-a03' a repository can be found including all required scripts, functions and datasets.
+To reproduce the analysis the reader can just execute all steps as shown by himself using the datasets, scripts and functions that can be found under the following url 'https://github.com/philippthienel/hsg-intro-r-a03'.
+
+The user is advised to download the full repository, set the working directory to the parent folder, and execute the scripts from there.
 
 ## 2.1 Structure of the documents
-Explain how data, files, functions etc. are organized, Where what can be found.
+The repository under this url contains two folders, several R scripts and two markwdown documents.
+
+The data folder contains the dataset that will be used in this analysis under the name 'vw_station_wagons.csv'
+
+The R scripts containing all code used in this analysis are:
+
+* A03_read_clean.R -
+* A03_descriptive.R - 
+* A03_explorative.R - 
+* A03_simulation.R -
 
 ## 2.2 Dependencies & required libraries
-Following R libraries will be required:
+Following R libraries will be required to run the analysis:
 
 * ggplot2
 * knitr
@@ -78,11 +89,20 @@ data <- read.csv(path.data, sep=',')
 ## 3.2 Cleaning the data
 We can easily see that the dataset is not in a perfect condition for further analysis, particularly with regards to two points:
 
-**1. The names of units are included in the datafields and the variable is therefore of type character, while it should be integer or numeric.**
+1. Some variables include units in the datafield and are encoded as character, while they should be integer or numeric
+2. Some variables are encoded as integer but should rather be treated as factor
+
+
+
+**1. Removing the units**
+
+The variables 'kilometer', 'verbrauch', 'leergewicht' 'co2.emission', 'garantie' and 'preis' all include their respective units in the datafield. Naturally the variables are therefor encoded as 'character' or 'factor'. This makes mathematical calculations and transformationson those variables impossible and we have to remove the units and cast those variables as 'numeric'.
+
 ```{r}
 index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis')
 kable(head(data[,index]))
 ```
+
 
 To remove the units from the data we will define a function that takes a character vector as input, extracts the first numerical sequence in every element of the input vector and returns these tuples in a numerical output vector of the same length as the input.
 
@@ -113,13 +133,14 @@ index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 
 kable(head(data[,index]))
 ```
 
-**2. Variables are encoded as integer, while they should rather be treated as factors.**
+**2. Convert integer variables to factors**
+
+The variables 'tueren', 'sitze' and 'zylinder' are encoded as integer. They take on only a few values and are better interpreted as factors. So we will want to convert them.
 ```{r}
 kable(sapply(data[,c("tueren","sitze","zylinder")], class))
-kable(summary(data[,c("tueren","sitze","zylinder")]))
 ```
 
-We can simply cast the respective variables as factors.
+To convert them we can simply cast the respective variables as factors.
 ```{r}
 data <- within(data,{
   tueren <- as.factor(tueren)
@@ -130,16 +151,19 @@ data <- within(data,{
 
 
 ## 3.3 Adding features to the data
-Three additional features that can be extracted from the existing variables are:
+Apart from the variables that are explicitly provided in the dataset, there are further variables that can be useful for the regression modeling later on.
+
+Three additional features that can easily be extracted from the existing variables:
 
 1. plattform of the model (Golf, Bora, Passat etc.) - can be extracted from the 'modell' variable
 2. age of the car in months - we will just take the time difference between first registration and July 2011 (when the data was sampled) as an approximation 
 3. displacement in litres - can be optained by dividing 'hubrauminccm' by 1000
 
 **1. Extracting the 'plattform' from the 'model' variable.**
+
 The plattform is always the second word in the 'modell' variable. So we need to extract only the second word of every element of that variable. 
 
-Noting that the first word is always 'VW' we can define a function 'GetPlattform' that takes a character vector as input, removes any string 'VW' from every element and then extracts always the first character sequence of length >= 1 until the first character that is not a letter.
+Noting that the first word is always 'VW', we can define a function 'GetPlattform' that takes a character vector as input, removes any string 'VW' from every element, and then extracts always the first character sequence of length >= 1 until the first character that is not a letter.
 
 ```{r}
 GetPlattform <- function(x) {
@@ -156,9 +180,10 @@ data$plattform <- as.factor(GetPlattform(data$modell))
 ```
 
 **2. Calculating the age of the vehicle**
+
 We can get the month and year of the first registration from the variable 'inverkehrssetzung'. This variable is of type factor and has the structure: 'month-year', so for example '01-2011'.
 
-To calculate the age we define a function that takes a factor variable as input. Splits the factor by '-' in two columns (month and year) and then calculates the difference between the month of the first registration and July 2011. 
+To calculate the age we define a function that takes a factor variable as input, splits the factor by '-' in two columns (month and year), and then calculates the difference between the month of the first registration and July 2011. 
 
 ```{r}
 GetAge <- function(x, month=7, year=2011) {
@@ -169,13 +194,14 @@ GetAge <- function(x, month=7, year=2011) {
 }
 ```
 
-We call that function on the 'inverkehrssetzung' variable to calculate the approximate age of the vehicle and assign the values to the new variable 'age'.
+We call that function on the 'inverkehrssetzung' variable to calculate theage of the vehicle in months and assign the values to the new variable 'age'.
 
 ```{r}
 data$age <- GetAge(data$inverkehrssetzung)
 ```
 
 **3. Calculating displacement in liters**
+
 This is just the simple measure of scaling the variable 'hubrauminccm' down by factor 1000. We will keep one decimalpoint however, since it is customary to indicate the size of the engine like that.
 
 ```{r}
@@ -183,47 +209,66 @@ data$hubraum.liter <- round(data$hubraum/1000,1)
 ```
 
 
-#4. Descriptive analysis
+#4. Explorative analysis
 All relevant code can be found in 'A03_descriptive.R' and 'A03_explorative.R'.
 
-Steps:
+In the following we will conduct an explorative analysis of the variables in the dataset. This will provide important insights on which we will base the development of a linear regression model later.
+
+The exploratorive analysis is structured as follows: 
 
 1. Descriptive analysis of dataset
-2. Missing values
-3. Preis - the dependent variable
-4. Numeric covariates of interest
-5. Factor variables
+2. Dependent variable - 'preis'
+3. Numeric covariates
+4. Factor variables
 
 ##4.1 Descriptive analysis of dataset
-Looking at the basics, we are primarily interested in the following metrics:
+First we will provide some basic facts about the dataset that we are dealing with. We are primarily interested in the following metrics:
 
-**Number of observations and variables**
+1. Dimensions of the dataset: number of observations and variables
+2. Types of variables (numeric, factors etc.)
+3. Missing data - how many observations have missing values, how are they distributed
+
+**1. Number of observations and variables**
+
+We have a total of 1170 observations on 24 variables. Three of those variables were added by us manually ('age', 'plattform', 'hubraum.liter'). 
 ```{r}
 dimensions <- dim(data)
 names(dimensions) <- c("observations","variables")
 kable(dimensions)
 ```
 
-**Types of variables**
-Determine class for every variable in the dataset.
+**2. Types of variables**
+
+We can easily determine the class of every variable qnd save the result in a named vector 'variables'. For this vector the name of every element will correspond to the name of the variable.
+
 ```{r}
 variables <- sapply(data, class)
 ```
 
-Numerical variables:
+Following variables are 'numeric' or 'integer' in the dataset.
 ```{r}
 numerical.variables <- variables[variables %in% c("integer","numeric")]
-kable(numerical.variables)
+kable(numerical.variables , col.names="class")
 ```
 
-Categorical variables:
+The following variables are either 'factors' or 'logical'. We will call them *categorical* to denote that they describe categories rather than numerical values (even though the categories can be numbers, like the number of doors for example). Also note that we do not have any variabls of type 'character', which is why we did not list any.
 ```{r}
 categorical.variables <- variables[variables %in% c("factor","logical")]
-kable(categorical.variables)
+kable(categorical.variables , col.names="class")
 ```
 
 
-## 4.2 Missing values
+**3. Missing values**
+
+Missing values are encoded as NA in the dataset. We are primirly interested in how many observations are afected by missing values overall, how those missing values are distributed over the variables (are there variables that suffer more strongly from missing values than others?), and if there is possibly a systematic component as to why values are missing.
+
+In the whole dataset we only have 616 observations where no values are missing in any of the variables. 
+
+```{r}
+sum(complete.cases(data))
+```
+
+To display the missing values per variable we define a short function 'CountNA'. The function takes a data frame as input and returns a data frame with the numer of missing values per variable (only if count >0).
 
 ```{r}
 CountNA <- function(df){
@@ -236,10 +281,15 @@ CountNA <- function(df){
 }
 ```
 
+
+As we can see especially the variables 'energieeffizienz, 'co2.emission' and 'innenfarbe' suffer strongly from missing values.
+
 ```{r}
 count.na <- CountNA(data)
 kable(count.na)
 ```
+
+For a graphical representation we call the function 'naBar' which is contained in the file 'naBar.R' in the functions folder. This function basically does tha same as the 'CountNA' function, but instead of a dataframe it returns a barplot (using ggplot2) counting the number of missing values per variable. For further information the reader can refer to the documentation of the function itself.
 
 ```{r}
 source("./functions/naBar.R")
@@ -250,40 +300,49 @@ naBar(data)
 ```
 
 **Bias in missing values**
+
+Now that we could observe a high number of missing values especially in the 'energieeffizienz' variable the question poses itself how to deal with those missing values.
+
 Would we introduce a selection bias if we exclude the observations where the variable 'energieeffizienz' is missing?
 
-Yes, we would. Easy to see, that 'energieefizienz' is missing disproportionally in lower ranges of the dependent variable 'preis'.
+In short: Yes, we would.
 
-If we would use that variable in our regression later, we would have to pay special attention on how to treat missing variables.
+It is easy to see, that 'energieeffizienz' is missing disproportionally in lower ranges of the dependent variable 'preis'.
+
 ```{r}
 plot <- ggplot(data, aes(x=preis, fill = is.na(energieeffizienz)))
 plot <- plot + geom_histogram(alpha = 0.6, binwidth=1000, colour="black")
-plot + scale_fill_manual(values=c("red","blue"))
+plot <- plot + scale_fill_manual(values=c("red","blue"))
+plot + labs(fill = 'energieeffizien is\nmissing',
+            title="Distribution of 'preis' depending on 'energieeffizienz'")
 ```
 
+If we wanted to use that variable in our regression model, we would have to pay special attention on how to treat missing variables. Since we have no information on the underlying reasons for the missing values, we would have a hard time getting rid of the bias. We therefore refrain from using the that variable.
 
-## 4.3 Preis - the dependent variable
+## 4.2 Dependent variable - 'preis'
 
-Numerical distribution measures lead to observations:
+In preperation for developing a regression model explaining (or predicting) the price of the cars, we will have a closer look at the 'preis' variable. 
 
-* something
-* something 2
+A first look on some numerical distribution measures lead to the following observations:
+
+* the price ranges from CHF 700 to CHF 30.000
+* CHF 30.000 seems very high for a used car. We will have a look at outliers in paragraph 4.5
+* median and mean are relatively close together - so that we would assume the distribution to be relatively symmetrical
 
 ```{r}
 kable(t(as.matrix(summary(data$preis))))
 ```
 
-Graphical representation by histogram.
-Obersations:
+A graphical representation of the distribution of 'preis' helps to substantiate some of the earlier observations. What is particularly interesting is that while the distribution seems indeed almost symmetrical, it is not concentrated around the mean or median. Instead we find a bimodal distribution. With two distinct *peaks* around CHF 5000 and CHF 25.000.
 
-* Bimodal
-+ might be sampling problem
-+ might be other economic reasons in the composition of population
 ```{r}
 plot <- ggplot(data, aes(x=preis))
 plot <- plot + geom_histogram(binwidth=1000, fill="red", alpha=0.6, color="black")
 plot
 ```
+
+
+
 
 'Preis' strongly dependent on 'age'
 ```{r}
@@ -303,7 +362,7 @@ plot + scale_fill_manual(values=c("red","blue"))
 ```
 
 
-## 4.4 Numeric covariates of interest
+## 4.3 Numeric covariates of interest
 Interested in mainly 2 aspects:
 
 1. Dispersion of covariates
@@ -356,7 +415,7 @@ source("./functions/corTiles.R")
 corTile(data[,numeric.covariates], use="pairwise.complete.obs")
 ```
 
-## 4.5 Categorical variables
+## 4.4 Categorical variables
 
 Selecting the relevant variables:
 ```{r}
@@ -367,7 +426,7 @@ kable(categoric.variables)
 
 **Frequency tables**
 
-Categorical variables that allow for easy implementation of bianry dummy variables:
+Categorical variables that allow for easy implementation of bianry (dummy) variables:
 ```{r}
 kable(t(as.matrix(with(data, table(getriebeart)))))
 ```
@@ -384,25 +443,8 @@ kable(t(as.matrix(with(data, table(treibstoff)))))
 kable(t(as.matrix(with(data, table(abmfk)))))
 ```
 
-Categorical variables that are highly concentrated on one value:
-```{r}
-kable(t(as.matrix(with(data, table(fahrzeugart)))))
-```
 
-```{r}
-kable(t(as.matrix(with(data, table(tueren)))))
-```
-
-```{r}
-kable(t(as.matrix(with(data, table(sitze)))))
-```
-
-```{r}
-kable(t(as.matrix(with(data, table(zylinder)))))
-```
-
-
-Categorical variables that are multidimensional:
+Categorical variables that are multivariate:
 ```{r}
 kable(t(as.matrix(with(data, table(aussenfarbe)))))
 ```
@@ -410,6 +452,67 @@ kable(t(as.matrix(with(data, table(aussenfarbe)))))
 ```{r}
 kable(t(as.matrix(with(data, table(plattform)))))
 ```
+
+
+# 5. Regression
+
+## 5.1 Variable selection
+
+We can base the decision on which variables to include in our regression on both economic reasoning and on the statistical evidence we found so far in the explorative analysis.
+
+
+
+## 5.2 Constructing dummy variables
+
+As we saw in the analysis of the *categorical* variables, there are mainly 4 variables that allow for an easy implemetation of dummy variables: 'getriebeart', 'treibstoff', 'antrieb' and 'abmfk'.
+
+We will therefore implement the 4 dummies as follows:
+
+* 'automatic' - 1: if the car has automatic gear shift (getriebeart == Automat)
+* 'diesel' -  1: if the engine is a diesel (treibstoff == Diesel)
+* 'by4' - 1: if the car is four wheel drive (antrieb == Allrad)
+* 'abmfk' - True: if the car has 'abmfk' (is already given in dataset)
+
+```{r}
+data$automatic <- ifelse(data$getriebeart == "Automat", 1, 0)
+data$diesel <- ifelse(data$treibstoff == "Diesel", 1, 0)
+data$by4 <- ifelse(data$antrieb == "Allrad", 1, 0)
+```
+
+## 5.3 Fitting linear models
+
+**1. A naive model**
+
+```{r}
+fit1 <- lm(preis ~ age + kilometer, data)
+kable(summary(fit1)$coefficients)
+```
+
+**2. A linear model with level effects in age (decreasing)**
+
+```{r}
+fit2 <- lm(preis ~ sqrt(age) + kilometer ,data)
+kable(summary(fit2)$coefficients)
+```
+
+
+**3. A linear model with level effects in age (decreasing) and dummies**
+
+```{r}
+fit3 <- lm(preis ~ sqrt(age) + kilometer + diesel + by4 + automatic , data)
+kable(summary(fit3)$coefficients)
+```
+
+
+**4. A linear model with maximum fit (with significant coefficients)**
+
+```{r}
+fit4 <- lm(preis ~ sqrt(age) + kilometer + leistunginps + garantie + 
+             leergewicht + diesel + by4 + automatic , data)
+kable(summary(fit4)$coefficients)
+```
+
+## 5.4 Goodness of fit
 
 
 
