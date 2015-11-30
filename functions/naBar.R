@@ -23,7 +23,8 @@ naBar <- function(x, exclude = TRUE, compare = FALSE){
     plotNA <- ggplot(data = NAs, aes(x = variables, y = numNAs))
     plotNA <- plotNA + geom_bar(stat = "identity", alpha = 0.6, fill = "red")
     plotNA <- plotNA + theme(axis.text.x=element_text(angle=45, hjust = 1))
-    plotNA <-plotNA + labs(x=NULL, y='Number of Missing Values')
+    plotNA <-plotNA + labs(x=NULL, y='Number of Missing Values',
+                           title='Missing values per variable')
     
     if(compare == TRUE){
       plotNA <- plotNA + geom_hline(yintercept = nrow(x), linetype = "dashed")

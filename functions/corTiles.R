@@ -26,5 +26,6 @@ corTile <- function(x, ...){
                                 vjust=1, size=11, hjust=1))
     tilePlot <- tilePlot + theme(axis.title = element_blank())
     tilePlot <- tilePlot + coord_equal()
+    tilePlot <- tilePlot + labs(title="Correlation matrix")
     return(tilePlot)
 }
