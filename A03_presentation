@@ -1,0 +1,258 @@
+---
+title: "Used Car Prices"
+author: "Lukas Vogt and Philipp Thienel"
+date: "November 29, 2015"
+output:
+  beamer_presentation:
+    colortheme: beaver
+    fonttheme: structurebold
+    theme: CambridgeUS
+---
+```{r include=FALSE}
+library(knitr)
+library(stringr)
+library(reshape2)
+library(ggplot2)
+library(xtable)
+setwd('C:/Users/Lukas/Downloads/hsg-intro-r-a03-master/hsg-intro-r-a03-master')
+path.data <- './data/vw_station_wagons.csv'
+data <- read.csv(path.data, sep=',')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=FALSE)
+```
+
+
+---
+# Table of Contents
+\textcolor{black}{1.} **Dataset and Assignment**
+
+\textcolor{black}{2.} **Cleaning the Dataset**  
+
+\textcolor{black}{3.} **Descriptive Analysis of the Dataset**  
+
+\textcolor{black}{4.} **Multivariate Analysis of the Dataset**  
+
+\textcolor{black}{5.} **I-Wish-I-Had-Known-Before**  
+
+
+
+# 1. Dataset and Assignment
+**Dataset:**
+
+Messy dataset that contains 1'170 records of a website selling used cars from July 2011. Along with the price there are 21 characteristics (kilometers, inverkehrssetzung, hubraum, etc.) of different VW station wagons (Golf, Passat, Bora, Caddy, Multivan).
+
+
+
+# 1. Dataset and Assignment
+**Assignment:**
+
+\textcolor{black}{1.} Import and clean messy dataset  
+
+\textcolor{black}{2.} Descriptive analysis of the dataset  
+\textcolor{white}{2.1}  What do you observe for prices?  
+\textcolor{white}{2.2}  How have they potentially been sampled? 
+
+\textcolor{black}{3.} Multivariate analysis of the dataset: Different Regression Models 
+
+\textcolor{black}{4.} Most reasonable / best regression model?
+
+
+
+# 2. Cleaning the dataset
+**Problem 1:** The units are included in the datafields and the variable is thus of type character, while it should be of type integer or numeric.  
+\begin{center}Variables with Units\end{center}
+```{r,echo=F,tidy=TRUE, tidy.opts=list(width.cutoff=50)}
+index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis') 
+kable(head(data[1:4,index[1:4]]),format = "markdown")
+```
+
+
+
+# 2. Cleaning the dataset
+**Solution 1:** To remove the units from the data we will define a function that takes a character vector as input and extracts the first numerical sequence in every element of the input vector.  
+
+```{r,echo=TRUE}
+GetValue <- function(x) {
+  require(stringr)
+  x <- gsub("'","",x)
+  x <- str_extract(x, '[0-9]+\\.*[0-9]*')
+  return(as.numeric(x))
+}
+```
+
+
+
+# 2. Cleaning the dataset
+\begin{center}Variables without Units\end{center}
+```{r,echo=FALSE}
+data <- within(data,{
+  kilometer <- GetValue(kilometer)
+  leergewicht <- GetValue(leergewicht)
+  verbrauch <- GetValue(verbrauch)
+  co2.emission <- GetValue(co2.emission)
+  garantie <- GetValue(garantie)
+  preis <- GetValue(preis)
+})
+
+index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis') 
+kable(head(data[1:4,index[1:4]]),format = "markdown")
+```
+
+
+
+# 2. Cleaning the dataset
+**Further problems:**  
+
+\textcolor{black}{1.} Extracting the plattfrom from the modell
+
+\textcolor{black}{2.} Variables are encoded as integers (hubraum, türen, etc.), while they should rather be treated as factors.  
+
+\textcolor{black}{3.} Calculating the age of the vehicle from the variable 'inverkehrssetzung'.
+
+
+
+# 3. Descriptive Analysis
+```{r,echo=FALSE}
+data <- within(data,{
+  tueren <- as.factor(tueren)
+  sitze <- as.factor(sitze)
+  zylinder <- as.factor(zylinder)
+})
+
+GetPlattform <- function(x) {
+  require(stringr)
+  x <- gsub('VW','',x)
+  plattform <- str_extract(x, '[a-zA-Z]+')
+  return(plattform)
+}
+
+data$plattform <- as.factor(GetPlattform(data$modell))
+
+GetAge <- function(x, month=7, year=2011) {
+  require(reshape2)
+  df <- colsplit(x,"-",names=c("month","year"))
+  age <- (year - df$year)*12 + (month - df$month)
+  return(age)
+}
+
+data$hubraum.liter <- round(data$hubraum/1000,1)
+
+dimensions <- dim(data)
+names(dimensions) <- c("observations","variables")
+
+data$age <- GetAge(data$inverkehrssetzung)
+```
+
+```{r,echo=FALSE}
+CountNA <- function(df){
+  count <- sapply(df, FUN = function(x) sum(is.na(x)))
+  count <- data.frame(variable = names(count), count.na = count,
+                         row.names=NULL)
+  count <- count[count$count.na>0,]
+  index <- order(count$count.na, decreasing=T)
+  return(count[index,])
+}
+```
+
+
+
+\textcolor{black}{1.} **Number of observations and variables**  
+
+There are 1'170 observations of 24 variables  
+
+\textcolor{black}{2.} **Types of Variables**     
+
+There are four types of variables: Integer, Numerical, Factor, and Logical  
+
+```{r,echo=FALSE}
+variables <- sapply(data, class)
+numerical.variables <- variables[variables %in% c("integer","numeric")]
+categorical.variables <- variables[variables %in% c("factor","logical")]
+numcat.variables<-c(numerical.variables,categorical.variables)
+kable(numcat.variables[c(1,3,23:24)],format = "markdown",col.names = "")
+
+```
+
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{3.} **Missing Values of Variables**  
+
+Some variables have missing values  
+```{r,echo=FALSE}
+count.na <- CountNA(data)
+kable(count.na[1:6,],format = "markdown")
+```
+
+
+
+# 3. Descriptive Analysis
+```{r,echo=FALSE}
+# NA Barchart
+source("./functions/naBar.R")
+naBar(data)
+```
+
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{3.} **Missing Values of Variables: Selection Bias**  
+Would we introduce a selection bias if we exclude the observations where the variable ‘energieeffizienz’ is missing?  
+
+Yes, we would. 
+
+‘Energieefizienz’ is missing disproportionally in lower ranges of the dependent variable ‘price’.
+
+# 3. Descriptive Analysis
+```{r,echo=FALSE}
+plot <- ggplot(data, aes(x=preis, fill = is.na(energieeffizienz)))
+plot <- plot + geom_histogram(alpha = 0.6, binwidth=1000, colour="black")
+plot + scale_fill_manual(values=c("red","blue"),name="Missing Value Energieeffizient")+labs(x = "Car Price",y = "Count")+ggtitle("Missing Values Energieeffizienz ")+theme(plot.title = element_text(lineheight=2, face="bold"))
+```
+
+
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{4.} **Price: What do we observe?**  
+Summary statistic
+```{r,echo=FALSE}
+kable(t(as.matrix(summary(data$preis))),format = "markdown")
+```
+
+Histogram of Price: Observe a binominal distribution  
+- might be sampling problem  
+- might be other economic reasons in the composition of population: Evidence that ‘Preis’ strongly dependent on ‘age’  
+
+We add binary variable 'young' if age < 60 months (5years) to show the dependency of 'preis' on 'age'
+
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{4.} **Price: What do we observe?**  
+```{r,echo=FALSE}
+# add binary variable 'young' if age < 60 months (5years)
+data$young <- ifelse(data$age <60, 1, 0)
+# graphical distribution differenciated by 'young'
+plot <- ggplot(data, aes(x=preis, fill=as.factor(young)))
+plot <- plot + geom_histogram(binwidth=1000, alpha=0.6, colour="black")
+plot + scale_fill_manual(values=c("red","blue"),name=c("Young"))+labs(x = "Car Price",y = "Count")+ggtitle("Histogram Price")+theme(plot.title = element_text(lineheight=2, face="bold"))
+```
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{5.} **Correlation Matrix**  
+Strong negative correlation of 'preis' and 'age' is visibile in the correlation matrix. 
+```{r,echo=FALSE,warning=FALSE}
+numeric.covariates <- names(data)[sapply(data, class) %in% c("integer","numeric")]
+cor.matrix <- cor(data[,numeric.covariates], use="pairwise.complete.obs")
+source("./functions/corTiles.R")
+corTile(data[,numeric.covariates], use="pairwise.complete.obs")
+```
+
+
+
+# 4. Multivariate Analysis
+
