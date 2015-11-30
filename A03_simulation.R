@@ -48,9 +48,7 @@ ProbFH <- function(deck,nPL,nDrws,nSim){
     hands <- DrawHands(deck, player = nPL, nDraws = nDrws)
     # Check if any two players have a full house in one game
     countFH <- sum(apply(hands, 1, FUN = CheckFH))
-     if (countFH == 2){
-      count.fullhouse <- count.fullhouse + 1
-     }
+     if (countFH == 2) count.fullhouse <- count.fullhouse + 1
   } # Close loop
   #
   # Calculation probability of two players having a full house
