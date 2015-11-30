@@ -1,118 +1,303 @@
-## SIMULATION ##
+---
+title: "Used Car Prices"
+author: "Lukas Vogt and Philipp Thienel"
+date: "November 30, 2015"
+output:
+  beamer_presentation:
+    colortheme: beaver
+    fonttheme: structurebold
+    theme: CambridgeUS
+---
+```{r include=FALSE}
+library(knitr)
+library(stringr)
+library(reshape2)
+library(ggplot2)
+library(xtable)
+setwd('C:/Users/Lukas/Downloads/hsg-intro-r-a03-master/hsg-intro-r-a03-master')
+path.data <- './data/vw_station_wagons.csv'
+data <- read.csv(path.data, sep=',')
+```
 
-# Create pokerdeck
-rank <- rep(c(1:13),4)  # Card ranks
-suit <- rep(c("C","D","S","H"),each = 13)  # Card suits
-pokerdeck <- data.frame(rank,suit)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=FALSE)
+```
 
 
-# Exercise 1: Probability full house of two players -----
+---
+# Table of Contents
+\textcolor{black}{1.} **Dataset and Assignment**
 
-DrawHands <- function(deck,player=6,nDraws=5){
-  # Deal hand to each player
-  cards <- sample(deck, player * nDraws)
-  hands <- data.frame(matrix(cards, nrow=player))
-  return(hands)
+\textcolor{black}{2.} **Cleaning the Dataset**  
+
+\textcolor{black}{3.} **Descriptive Analysis of the Dataset**  
+
+\textcolor{black}{4.} **Multivariate Analysis of the Dataset**  
+
+\textcolor{black}{5.} **I-Wish-I-Had-Known-Before**  
+
+
+
+# 1. Dataset and Assignment
+**Dataset:**
+
+Messy dataset that contains 1'170 records of a website selling used cars from July 2011. Along with the price there are 21 characteristics (kilometers, inverkehrssetzung, hubraum, etc.) of different VW station wagons (Golf, Passat, Bora, Caddy, Multivan).
+
+
+
+# 1. Dataset and Assignment
+**Assignment:**
+
+\textcolor{black}{1.} Import and clean messy dataset  
+
+\textcolor{black}{2.} Descriptive analysis of the dataset  
+\textcolor{white}{2.1}  What do you observe for prices?  
+\textcolor{white}{2.2}  How have they potentially been sampled? 
+
+\textcolor{black}{3.} Multivariate analysis of the dataset: Regression Models 
+
+\textcolor{black}{4.} Most reasonable / best regression model?
+
+
+
+# 2. Cleaning the dataset
+**Problem 1:** The units are included in the datafields and the variable is thus of type character, while it should be of type integer or numeric.  
+\begin{center}Variables with Units\end{center}
+```{r,echo=F,tidy=TRUE, tidy.opts=list(width.cutoff=50)}
+index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis') 
+kable(head(data[1:4,index[1:4]]),format = "markdown")
+```
+
+
+
+# 2. Cleaning the dataset
+**Solution 1:** To remove the units from the data we will define a function that takes a character vector as input and extracts the first numerical sequence in every element of the input vector.  
+
+```{r,echo=TRUE}
+GetValue <- function(x) {
+  require(stringr)
+  x <- gsub("'","",x)
+  x <- str_extract(x, '[0-9]+\\.*[0-9]*')
+  return(as.numeric(x))
+}
+```
+
+
+
+# 2. Cleaning the dataset
+\begin{center}Variables without Units\end{center}
+```{r,echo=FALSE}
+data <- within(data,{
+  kilometer <- GetValue(kilometer)
+  leergewicht <- GetValue(leergewicht)
+  verbrauch <- GetValue(verbrauch)
+  co2.emission <- GetValue(co2.emission)
+  garantie <- GetValue(garantie)
+  preis <- GetValue(preis)
+})
+
+index <- c('kilometer', 'verbrauch', 'leergewicht', 'co2.emission', 'garantie', 'preis') 
+kable(head(data[1:4,index[1:4]]),format = "markdown")
+```
+
+
+
+# 2. Cleaning the dataset
+**Further problems:**  
+
+\textcolor{black}{1.} Extracting the plattfrom from the modell
+
+\textcolor{black}{2.} Variables are encoded as integers (hubraum, türen, etc.), while they should rather be treated as factors.  
+
+\textcolor{black}{3.} Calculating the age of the vehicle from the variable 'inverkehrssetzung'.
+
+
+
+# 3. Descriptive Analysis
+```{r,echo=FALSE}
+data <- within(data,{
+  tueren <- as.factor(tueren)
+  sitze <- as.factor(sitze)
+  zylinder <- as.factor(zylinder)
+})
+
+GetPlattform <- function(x) {
+  require(stringr)
+  x <- gsub('VW','',x)
+  plattform <- str_extract(x, '[a-zA-Z]+')
+  return(plattform)
 }
 
+data$plattform <- as.factor(GetPlattform(data$modell))
 
-CheckFH <- function(hand){
-  # Check if one player has a full house
-  x <- as.integer(hand)
-  if(max(tabulate(x)) == 3)
-    if(length(unique(x)) == 2) return(1)
-      else return(0)
-  else return(0)
+GetAge <- function(x, month=7, year=2011) {
+  require(reshape2)
+  df <- colsplit(x,"-",names=c("month","year"))
+  age <- (year - df$year)*12 + (month - df$month)
+  return(age)
 }
 
+data$hubraum.liter <- round(data$hubraum/1000,1)
 
-ProbFH <- function(deck,nPL,nDrws,nSim){
-  # Compute probability of any two players having a full house in one game
-  #
-  # Args:
-  #  deck: Card deck
-  #  nPL: Number of players
-  #  nDrws: Number of cards drawn
-  #  nSim: Number of simulations
-  #
-  # Returns:
-  #  Number of simulations, number of occurences of two players having a full house, probability of two players having a full house
-  #
-  # Initial value count full house
-  count.fullhouse <- 0
-  #
-  #Open loop
-  for (i in 1:nSim){
-    # Deal hand to each player
-    hands <- DrawHands(deck, player = nPL, nDraws = nDrws)
-    # Check if any two players have a full house in one game
-    countFH <- sum(apply(hands, 1, FUN = CheckFH))
-     if (countFH == 2){
-      count.fullhouse <- count.fullhouse + 1
-     }
-  } # Close loop
-  #
-  # Calculation probability of two players having a full house
-  p.fullhouse<-count.fullhouse/nSim
-  #
-  # Output
-  out<-list(nSim,count.fullhouse,p.fullhouse)
-  names(out)<-c("nSim","count.fullhouse","p.fullhouse")
-  return(out)
+dimensions <- dim(data)
+names(dimensions) <- c("observations","variables")
+
+data$age <- GetAge(data$inverkehrssetzung)
+```
+
+```{r,echo=FALSE}
+CountNA <- function(df){
+  count <- sapply(df, FUN = function(x) sum(is.na(x)))
+  count <- data.frame(variable = names(count), count.na = count,
+                         row.names=NULL)
+  count <- count[count$count.na>0,]
+  index <- order(count$count.na, decreasing=T)
+  return(count[index,])
 }
-
-# Simulation of 100/1'000/10'000/100'000 games
-ProbFH(deck = pokerdeck$rank,nPL = 6,nDrws = 5, nSim = 100)
-
-ProbFH(deck = pokerdeck$rank,nPL = 6,nDrws = 5, nSim = 1000)
-
-ProbFH(deck = pokerdeck$rank,nPL = 6,nDrws = 5, nSim = 10000)
-
-ProbFH(deck = pokerdeck$rank,nPL = 6,nDrws = 5, nSim = 100000)
+```
 
 
 
-# Exercise 2: Probability royal flush player 1 -----
+\textcolor{black}{1.} **Number of observations and variables**  
 
-ProbRF<-function (deck,nSim,nDrws) {
-  # Compute probability that player 1 has a royal flush
-  #
-  # Args:
-  #  deck: Card deck
-  #  nSim: Number of simulations
-  #  nDraws: Number of cards drawn
-  #
-  # Returns:
-  #  Number of simulations, number of occurences of a royal flush, probability of a royal flush
-  #
-  # Initial value count royal flush
-  count.royalflush<-0
-  #
-  # Open loop
-  for(i in 1:nSim) {
-    # Determine card numbers for this hand
-    select<-sample(nrow(deck),nDrws)
-    # Select rows from the card deck for this hand
-    hand<-deck[select,]
-    # Check for royal flush and increment counter if royal flush occurs
-    if (sum(hand[,1])==55)
-      if (length(unique(hand[,2]))==1) count.royalflush<-count.royalflush+1
-  } # Close loop
-  #
-  # Calculation probability royal flush
-  p.royalflush<-count.royalflush/nSim
-  #
-  # Output
-  out<-list(nSim,count.royalflush,p.royalflush)
-  names(out)<-c("nSim","count.royalflush","p.royalflush")
-  return(out)
-}
+There are 1'170 observations of 24 variables  
 
-# Simulation of 1'000/10'000/100'000/1'000'000 games
-ProbRF(deck = pokerdeck,nSim = 1000,nDrws = 5)
+\textcolor{black}{2.} **Types of Variables**     
 
-ProbRF(deck = pokerdeck,nSim = 10000,nDrws = 5)
+There are four types of variables: Integer, Numerical, Factor, and Logical  
 
-ProbRF(deck = pokerdeck,nSim = 100000,nDrws = 5)
+```{r,echo=FALSE}
+variables <- sapply(data, class)
+numerical.variables <- variables[variables %in% c("integer","numeric")]
+categorical.variables <- variables[variables %in% c("factor","logical")]
+numcat.variables<-c(numerical.variables,categorical.variables)
+kable(numcat.variables[c(1,3,23:24)],format = "markdown",col.names = "")
 
-ProbRF(deck = pokerdeck,nSim = 1000000,nDrws = 5)
+```
+
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{3.} **Missing Values of Variables**  
+
+Some variables have missing values  
+```{r,echo=FALSE}
+count.na <- CountNA(data)
+kable(count.na[1:6,],format = "markdown")
+```
+
+
+
+# 3. Descriptive Analysis
+```{r,echo=FALSE}
+# NA Barchart
+source("./functions/naBar.R")
+naBar(data)
+```
+
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{3.} **Missing Values of Variables: Selection Bias**  
+Would we introduce a selection bias if we exclude the observations where the variable ‘energieeffizienz’ is missing?  
+
+Yes, we would. 
+
+‘Energieefizienz’ is missing disproportionally in lower ranges of the dependent variable ‘preis’.
+
+# 3. Descriptive Analysis
+```{r,echo=FALSE}
+plot <- ggplot(data, aes(x=preis, fill = is.na(energieeffizienz)))
+plot <- plot + geom_histogram(alpha = 0.6, binwidth=1000, colour="black")
+plot + scale_fill_manual(values=c("red","blue"),name="Missing Value Energieeffizient")+labs(x = "Car Price",y = "Count")+ggtitle("Missing Values Energieeffizienz ")+theme(plot.title = element_text(lineheight=2, face="bold"))
+```
+
+
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{4.} **Price: What do we observe?**  
+Summary statistic
+```{r,echo=FALSE}
+kable(t(as.matrix(summary(data$preis))),format = "markdown")
+```
+
+Histogram of Preis: Observe a binominal distribution  
+-might be sampling problem  
+-might be other economic reasons in the composition of population: Evidence that ‘preis’ strongly dependent on ‘age’  
+
+We add binary variable 'young' if age < 60 months (5years) to show the dependency of 'preis' on 'age'
+
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{4.} **Price: What do we observe?**  
+```{r,echo=FALSE}
+# add binary variable 'young' if age < 60 months (5years)
+data$young <- ifelse(data$age <60, 1, 0)
+# graphical distribution differenciated by 'young'
+plot <- ggplot(data, aes(x=preis, fill=as.factor(young)))
+plot <- plot + geom_histogram(binwidth=1000, alpha=0.6, colour="black")
+plot + scale_fill_manual(values=c("red","blue"),name=c("Young"))+labs(x = "Car Price",y = "Count")+ggtitle("Histogram Price")+theme(plot.title = element_text(lineheight=2, face="bold"))
+```
+
+
+# 3. Descriptive Analysis
+\textcolor{black}{5.} **Correlation Matrix**  
+Strong negative correlation of 'price' and 'age' is visibile in the correlation matrix. 
+```{r,echo=FALSE,warning=FALSE}
+numeric.covariates <- names(data)[sapply(data, class) %in% c("integer","numeric")]
+cor.matrix <- cor(data[,numeric.covariates], use="pairwise.complete.obs")
+source("./functions/corTiles.R")
+corTile(data[,numeric.covariates], use="pairwise.complete.obs")
+```
+
+
+
+# 4. Multivariate Analysis
+**Three Regression Models:**  
+
+\textcolor{black}{1.} Standard Regression Model without Dummy Variables:  
+
+preis~age  
+
+
+\textcolor{black}{2.} Standard Regression Model with Dummy Variables:  
+
+preis~age  
+
+\textcolor{black}{3.} Best Fit Regression Model:  
+
+preis~age  
+
+
+# 4. Multivariate Analysis
+**Economic Rational of the Regression Variables:**  
+
+-Square Root Age: Model the (expected) decreasing impact of age on the value of the car
+
+-Dummy Variables: Expected to influnce the dependent variable 'preis'. E.g. cars with or without automatic transmission are not an identical product.  
+
+
+
+# 4. Multivariate Analysis
+**Results of the :**  
+
+
+
+# 4. Multivariate Analysis
+**Most reasonable / best regression model?**  
+
+-Both the Standard Regression Model with or without Dummy Variables are very reasonable and have a high R^2 (predictive power).  
+
+-The Best Fit Regression Model is "overfitted" and includes economocially non-reasonable variables.  
+
+-Also, the prediction power of the Best Fit Model is only slightly higher than for the Standard Regression Models. 
+
+
+
+
+# 5. I-Wish-I-Had-Known-Before
+\textcolor{black}{1.} R Markdown: When you generate tables with kable() (libarary(knitr)) the format must be set to "markdown",i.e. kable(...,format="markdown")  
+
+\textcolor{black}{2.} R Markdown
